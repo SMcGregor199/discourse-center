@@ -1,12 +1,10 @@
-import { render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
-import App from '../src/App';
+import { render, screen } from '@testing-library/react'
+import App from '../src/App'
 
-test('renders Home link', () => {
-  render(
-    <MemoryRouter>
-      <App />
-    </MemoryRouter>
-  );
-  expect(screen.getByRole('link', { name: /home/i })).toBeInTheDocument();
-});
+test('renders editor title and actions', () => {
+  render(<App />)
+
+  expect(screen.getByRole('heading', { name: /discourse center/i })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /copy html/i })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /clear editor/i })).toBeInTheDocument()
+})
