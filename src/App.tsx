@@ -1,14 +1,19 @@
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { Dashboard } from './components/Dashboard'
 import { EditorShell } from './components/EditorShell'
+import { ImageRepository } from './components/ImageRepository'
 import './App.css'
 
 export default function App() {
   return (
-    <main className='app'>
-      <header className='app-header'>
-        <h1>Discourse Center</h1>
-        <p>Notion-style rich text editing with local persistence.</p>
-      </header>
-      <EditorShell />
-    </main>
+    <Router>
+      <main className='app'>
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/editor/:projectId" element={<EditorShell />} />
+          <Route path="/images" element={<ImageRepository />} />
+        </Routes>
+      </main>
+    </Router>
   )
 }

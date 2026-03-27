@@ -2,6 +2,9 @@ import type { Editor } from '@tiptap/react'
 
 type ToolbarProps = {
   editor: Editor | null
+  onBackToDashboard?: () => void
+  onOpenImageBrowser?: () => void
+  onOpenCitationManager?: () => void
 }
 
 type ToolbarButtonProps = {
@@ -33,10 +36,31 @@ function ToolbarButton({
   )
 }
 
-export function Toolbar({ editor }: ToolbarProps) {
+export function Toolbar({ editor, onBackToDashboard, onOpenImageBrowser, onOpenCitationManager }: ToolbarProps) {
   if (!editor) {
     return (
       <div className='toolbar' role='toolbar' aria-label='Editor formatting'>
+        {onBackToDashboard && (
+          <ToolbarButton
+            label='← Back'
+            ariaLabel='Back to dashboard'
+            onClick={onBackToDashboard}
+          />
+        )}
+        {onOpenImageBrowser && (
+          <ToolbarButton
+            label='📷 Image'
+            ariaLabel='Browse images'
+            onClick={onOpenImageBrowser}
+          />
+        )}
+        {onOpenCitationManager && (
+          <ToolbarButton
+            label='📚 Citations'
+            ariaLabel='Manage citations'
+            onClick={onOpenCitationManager}
+          />
+        )}
         <ToolbarButton label='B' ariaLabel='Bold' isDisabled onClick={() => undefined} />
       </div>
     )
@@ -47,6 +71,27 @@ export function Toolbar({ editor }: ToolbarProps) {
 
   return (
     <div className='toolbar' role='toolbar' aria-label='Editor formatting'>
+      {onBackToDashboard && (
+        <ToolbarButton
+          label='← Back'
+          ariaLabel='Back to dashboard'
+          onClick={onBackToDashboard}
+        />
+      )}
+      {onOpenImageBrowser && (
+        <ToolbarButton
+          label='📷 Image'
+          ariaLabel='Browse images'
+          onClick={onOpenImageBrowser}
+        />
+      )}
+      {onOpenCitationManager && (
+        <ToolbarButton
+          label='📚 Citations'
+          ariaLabel='Manage citations'
+          onClick={onOpenCitationManager}
+        />
+      )}
       <ToolbarButton
         label='B'
         ariaLabel='Bold'
