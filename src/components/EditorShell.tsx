@@ -12,6 +12,7 @@ import { StatusBar } from './StatusBar'
 import { Toolbar } from './Toolbar'
 import { ImageBrowser } from './ImageBrowser'
 import { CitationManager } from './CitationManager'
+import { AIResearchModal } from './AIResearchModal'
 import {
   loadProject,
   saveProject,
@@ -42,6 +43,8 @@ export function EditorShell() {
   })
   const [showImageBrowser, setShowImageBrowser] = useState(false)
   const [showCitationManager, setShowCitationManager] = useState(false)
+  const [showAIResearch, setShowAIResearch] = useState(false)
+  const [selectedText, setSelectedText] = useState('')
   const saveTimeoutRef = useRef<number | null>(null)
 
   const initialContent = useMemo<JSONContent>(() => {
@@ -76,8 +79,40 @@ export function EditorShell() {
         class: 'editor-content',
         'aria-label': 'Rich text editor',
       },
+      handleKeyDown: (_view, event) => {
+        if (event.key !== 'Tab') {
+          return false
+        }
+
+        event.preventDefault()
+
+        if (!editor) {
+          return true
+        }
+
+        if (event.shiftKey) {
+          if (editor.can().liftListItem('listItem')) {
+            editor.chain().focus().liftListItem('listItem').run()
+            return true
+          }
+
+          editor.chain().focus().insertContent('    ').run()
+          return true
+        }
+
+        if (editor.can().sinkListItem('listItem')) {
+          editor.chain().focus().sinkListItem('listItem').run()
+          return true
+        }
+
+        editor.chain().focus().insertContent('    ').run()
+        return true
+      },
     },
     onUpdate: ({ editor: currentEditor }) => {
+      if (!projectId) {
+        return
+      }
       setFeedback('Saving...')
 
       if (saveTimeoutRef.current) {
@@ -207,6 +242,26 @@ export function EditorShell() {
     }
   }
 
+  const openAIResearch = () => {
+    if (editor) {
+      const { from, to } = editor.state.selection
+      const text = editor.state.doc.textBetween(from, to)
+      setSelectedText(text)
+    }
+    setShowAIResearch(true)
+  }
+
+  const closeAIResearch = () => {
+    setShowAIResearch(false)
+    setSelectedText('')
+  }
+
+  const insertResearchPack = (content: string) => {
+    if (editor) {
+      editor.chain().focus().insertContent(content).run()
+    }
+  }
+
   if (!project && projectId) {
     return (
       <div className="editor-shell loading">
@@ -217,7 +272,7 @@ export function EditorShell() {
 
   return (
     <section className='editor-shell' aria-label='Rich text editor section'>
-      <Toolbar editor={editor} onBackToDashboard={backToDashboard} onOpenImageBrowser={openImageBrowser} onOpenCitationManager={openCitationManager} />
+      <Toolbar editor={editor} onBackToDashboard={backToDashboard} onOpenImageBrowser={openImageBrowser} onOpenCitationManager={openCitationManager} onOpenAIResearch={openAIResearch} />
 
       <div className='editor-surface'>
         {editor ? <BubbleMenuBar editor={editor} /> : null}
@@ -258,6 +313,15 @@ export function EditorShell() {
             />
           </div>
         </div>
+      )}
+
+      {showAIResearch && project && (
+        <AIResearchModal
+          selectedText={selectedText}
+          currentProject={project}
+          onInsert={insertResearchPack}
+          onClose={closeAIResearch}
+        />
       )}
     </section>
   )

@@ -5,6 +5,7 @@ type ToolbarProps = {
   onBackToDashboard?: () => void
   onOpenImageBrowser?: () => void
   onOpenCitationManager?: () => void
+  onOpenAIResearch?: () => void
 }
 
 type ToolbarButtonProps = {
@@ -36,7 +37,7 @@ function ToolbarButton({
   )
 }
 
-export function Toolbar({ editor, onBackToDashboard, onOpenImageBrowser, onOpenCitationManager }: ToolbarProps) {
+export function Toolbar({ editor, onBackToDashboard, onOpenImageBrowser, onOpenCitationManager, onOpenAIResearch }: ToolbarProps) {
   if (!editor) {
     return (
       <div className='toolbar' role='toolbar' aria-label='Editor formatting'>
@@ -59,6 +60,13 @@ export function Toolbar({ editor, onBackToDashboard, onOpenImageBrowser, onOpenC
             label='📚 Citations'
             ariaLabel='Manage citations'
             onClick={onOpenCitationManager}
+          />
+        )}
+        {onOpenAIResearch && (
+          <ToolbarButton
+            label='🔍 AI'
+            ariaLabel='AI research assistant'
+            onClick={onOpenAIResearch}
           />
         )}
         <ToolbarButton label='B' ariaLabel='Bold' isDisabled onClick={() => undefined} />
@@ -90,6 +98,13 @@ export function Toolbar({ editor, onBackToDashboard, onOpenImageBrowser, onOpenC
           label='📚 Citations'
           ariaLabel='Manage citations'
           onClick={onOpenCitationManager}
+        />
+      )}
+      {onOpenAIResearch && (
+        <ToolbarButton
+          label='🔍 AI'
+          ariaLabel='AI research assistant'
+          onClick={onOpenAIResearch}
         />
       )}
       <ToolbarButton
@@ -132,7 +147,7 @@ export function Toolbar({ editor, onBackToDashboard, onOpenImageBrowser, onOpenC
         label='Quote'
         ariaLabel='Blockquote'
         isActive={editor.isActive('blockquote')}
-        onClick={() => editor.chain().focus().toggleBlockquote().run()}
+        onClick={() => editor.chain().focus().setParagraph().toggleBlockquote().run()}
       />
       <ToolbarButton
         label='H1'

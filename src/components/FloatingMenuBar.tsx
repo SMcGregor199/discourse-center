@@ -35,7 +35,7 @@ export function FloatingMenuBar({ editor }: FloatingMenuBarProps) {
         type='button'
         className='menu-button'
         aria-label='Insert blockquote'
-        onClick={() => editor.chain().focus().toggleBlockquote().run()}
+        onClick={() => editor.chain().focus().setParagraph().toggleBlockquote().run()}
       >
         Quote
       </button>
