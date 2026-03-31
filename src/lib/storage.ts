@@ -423,17 +423,25 @@ export function setCurrentProjectId(id: string): void {
 export function countWords(content: JSONContent): number {
   let count = 0
   
-  function countInNode(node: any): void {
+  function countInNode(node: { type?: string; text?: string; content?: unknown[] }): void {
     if (node.type === 'text' && node.text) {
       count += node.text.split(/\s+/).filter((word: string) => word.length > 0).length
     }
     if (node.content && Array.isArray(node.content)) {
-      node.content.forEach(countInNode)
+      node.content.forEach((child: unknown) => {
+        if (typeof child === 'object' && child !== null) {
+          countInNode(child as { type?: string; text?: string; content?: unknown[] })
+        }
+      })
     }
   }
   
   if (content.content) {
-    content.content.forEach(countInNode)
+    content.content.forEach((child: unknown) => {
+      if (typeof child === 'object' && child !== null) {
+        countInNode(child as { type?: string; text?: string; content?: unknown[] })
+      }
+    })
   }
   
   return count
