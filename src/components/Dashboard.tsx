@@ -1,6 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { loadProjects, createProject, saveProject, type Project, type CitationStyle } from '../lib/storage'
+import {
+  loadProjects,
+  createProject,
+  saveProject,
+  normalizeProjectTitle,
+  type Project,
+  type CitationStyle,
+} from '../lib/storage'
 import { CitationStyleSelector } from './CitationStyleSelector'
 
 export function Dashboard() {
@@ -42,6 +49,8 @@ export function Dashboard() {
   })
   const navigate = useNavigate()
   const [showCitationSelector, setShowCitationSelector] = useState(false)
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null)
+  const [draftTitle, setDraftTitle] = useState('')
 
   const createNewProject = () => {
     setShowCitationSelector(true)
@@ -60,7 +69,43 @@ export function Dashboard() {
   }
 
   const openProject = (projectId: string) => {
+    if (editingProjectId === projectId) {
+      return
+    }
     navigate(`/editor/${projectId}`)
+  }
+
+  const startRenamingProject = (project: Project) => {
+    setEditingProjectId(project.id)
+    setDraftTitle(project.title)
+  }
+
+  const cancelRenamingProject = () => {
+    setEditingProjectId(null)
+    setDraftTitle('')
+  }
+
+  const saveProjectTitle = (projectId: string) => {
+    const normalizedTitle = normalizeProjectTitle(draftTitle)
+
+    setProjects(previousProjects =>
+      previousProjects.map(project => {
+        if (project.id !== projectId) {
+          return project
+        }
+
+        const updatedProject = {
+          ...project,
+          title: normalizedTitle,
+          updatedAt: new Date().toISOString(),
+        }
+        saveProject(updatedProject)
+        return updatedProject
+      }),
+    )
+
+    setEditingProjectId(null)
+    setDraftTitle('')
   }
 
   const openImageRepository = () => {
@@ -109,7 +154,56 @@ export function Dashboard() {
             className="project-card"
             onClick={() => openProject(project.id)}
           >
-            <h3 className="project-title">{project.title}</h3>
+            <div className="project-card-header">
+              {editingProjectId === project.id ? (
+                <form
+                  className="project-title-form"
+                  onSubmit={(event) => {
+                    event.preventDefault()
+                    event.stopPropagation()
+                    saveProjectTitle(project.id)
+                  }}
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <input
+                    className="project-title-input"
+                    aria-label="Project title"
+                    value={draftTitle}
+                    onChange={(event) => setDraftTitle(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Escape') {
+                        event.preventDefault()
+                        cancelRenamingProject()
+                      }
+                    }}
+                    autoFocus
+                  />
+                  <div className="project-title-actions">
+                    <button type="submit" className="project-title-save">
+                      Save
+                    </button>
+                    <button type="button" className="project-title-cancel" onClick={cancelRenamingProject}>
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <>
+                  <h3 className="project-title">{project.title}</h3>
+                  <button
+                    type="button"
+                    className="project-title-edit"
+                    aria-label={`Rename ${project.title}`}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      startRenamingProject(project)
+                    }}
+                  >
+                    Rename
+                  </button>
+                </>
+              )}
+            </div>
             <div className="project-meta">
               <span className="word-count">{formatWordCount(project.wordCount)} words</span>
               <span className="project-age">{formatDate(project.updatedAt)}</span>

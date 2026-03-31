@@ -3,6 +3,7 @@ import type { JSONContent } from '@tiptap/react'
 export const PROJECTS_STORAGE_KEY = 'discourse-center:projects'
 export const CURRENT_PROJECT_KEY = 'discourse-center:current-project'
 export const IMAGES_STORAGE_KEY = 'discourse-center:images'
+export const DEFAULT_PROJECT_TITLE = 'Untitled Document'
 
 export interface Project {
   id: string
@@ -44,11 +45,6 @@ export interface StoredImage {
 export const DEFAULT_DOCUMENT: JSONContent = {
   type: 'doc',
   content: [
-    {
-      type: 'heading',
-      attrs: { level: 1 },
-      content: [{ type: 'text', text: 'Untitled' }],
-    },
     {
       type: 'paragraph',
       content: [{ type: 'text', text: 'This editor auto-saves to local storage.' }],
@@ -171,6 +167,11 @@ export function formatFileSize(bytes: number): string {
   const i = Math.floor(Math.log(bytes) / Math.log(k))
   
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+}
+
+export function normalizeProjectTitle(title?: string): string {
+  const trimmedTitle = title?.trim()
+  return trimmedTitle && trimmedTitle.length > 0 ? trimmedTitle : DEFAULT_PROJECT_TITLE
 }
 
 // Citation formatting functions
@@ -387,16 +388,11 @@ export function deleteProject(id: string): void {
 
 export function createProject(title?: string, citationStyle: CitationStyle = 'mla'): Project {
   const now = new Date().toISOString()
-  const projectTitle = title || 'Untitled Document'
+  const projectTitle = normalizeProjectTitle(title)
   
   const content: JSONContent = {
     type: 'doc',
     content: [
-      {
-        type: 'heading',
-        attrs: { level: 1 },
-        content: [{ type: 'text', text: projectTitle }],
-      },
       {
         type: 'paragraph',
         content: [{ type: 'text', text: 'Start writing...' }],

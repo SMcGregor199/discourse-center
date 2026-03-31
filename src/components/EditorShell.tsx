@@ -17,7 +17,9 @@ import {
   loadProject,
   saveProject,
   DEFAULT_DOCUMENT,
+  DEFAULT_PROJECT_TITLE,
   countWords,
+  normalizeProjectTitle,
   type Project,
   type StoredImage,
   type Source,
@@ -45,7 +47,10 @@ export function EditorShell() {
   const [showCitationManager, setShowCitationManager] = useState(false)
   const [showAIResearch, setShowAIResearch] = useState(false)
   const [selectedText, setSelectedText] = useState('')
+  const [title, setTitle] = useState(() => normalizeProjectTitle(project?.title))
   const saveTimeoutRef = useRef<number | null>(null)
+  const projectRef = useRef<Project | null>(project)
+  const titleRef = useRef(title)
 
   const initialContent = useMemo<JSONContent>(() => {
     if (projectId) {
@@ -110,34 +115,65 @@ export function EditorShell() {
       },
     },
     onUpdate: ({ editor: currentEditor }) => {
-      if (!projectId) {
-        return
-      }
-      setFeedback('Saving...')
-
-      if (saveTimeoutRef.current) {
-        window.clearTimeout(saveTimeoutRef.current)
-      }
-
-      saveTimeoutRef.current = window.setTimeout(() => {
-        try {
-          if (project && projectId) {
-            const updatedProject = {
-              ...project,
-              content: currentEditor.getJSON(),
-              updatedAt: new Date().toISOString(),
-              wordCount: countWords(currentEditor.getJSON()),
-            }
-            saveProject(updatedProject)
-            setProject(updatedProject)
-            setFeedback('Saved locally')
-          }
-        } catch {
-          setFeedback('Save failed')
-        }
-      }, SAVE_DEBOUNCE_MS)
+      queueProjectSave({
+        content: currentEditor.getJSON(),
+      })
     },
   })
+
+  const queueProjectSave = (overrides: Partial<Project> = {}) => {
+    if (!projectId) {
+      return
+    }
+
+    setFeedback('Saving...')
+
+    if (saveTimeoutRef.current) {
+      window.clearTimeout(saveTimeoutRef.current)
+    }
+
+    saveTimeoutRef.current = window.setTimeout(() => {
+      try {
+        const existingProject = projectRef.current ?? loadProject(projectId)
+        if (!existingProject) {
+          setFeedback('Save failed')
+          return
+        }
+
+        const nextContent = overrides.content ?? editor?.getJSON() ?? existingProject.content
+        const nextTitle = normalizeProjectTitle(
+          typeof overrides.title === 'string' ? overrides.title : titleRef.current,
+        )
+        const updatedProject = {
+          ...existingProject,
+          ...overrides,
+          title: nextTitle,
+          content: nextContent,
+          updatedAt: new Date().toISOString(),
+          wordCount: countWords(nextContent),
+        }
+
+        saveProject(updatedProject)
+        projectRef.current = updatedProject
+        setProject(updatedProject)
+        setFeedback('Saved locally')
+      } catch {
+        setFeedback('Save failed')
+      }
+    }, SAVE_DEBOUNCE_MS)
+  }
+
+  useEffect(() => {
+    projectRef.current = project
+  }, [project])
+
+  useEffect(() => {
+    titleRef.current = title
+  }, [title])
+
+  useEffect(() => {
+    setTitle(normalizeProjectTitle(project?.title))
+  }, [project?.id, project?.title])
 
   useEffect(() => {
     return () => {
@@ -199,6 +235,14 @@ export function EditorShell() {
 
   const backToDashboard = () => {
     navigate('/')
+  }
+
+  const commitTitleChange = () => {
+    const normalizedTitle = normalizeProjectTitle(title)
+    if (normalizedTitle !== title) {
+      setTitle(normalizedTitle)
+    }
+    queueProjectSave({ title: normalizedTitle })
   }
 
   const openImageBrowser = () => {
@@ -277,7 +321,35 @@ export function EditorShell() {
       <div className='editor-surface'>
         {editor ? <BubbleMenuBar editor={editor} /> : null}
         {editor ? <FloatingMenuBar editor={editor} /> : null}
-        <EditorContent editor={editor} />
+        <div className='editor-scroll-region'>
+          <input
+            className='editor-title-input'
+            aria-label='Document title'
+            placeholder={DEFAULT_PROJECT_TITLE}
+            value={title}
+            onChange={(event) => {
+              setTitle(event.target.value)
+              titleRef.current = event.target.value
+              queueProjectSave({ title: event.target.value })
+            }}
+            onBlur={commitTitleChange}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault()
+                commitTitleChange()
+                editor?.commands.focus('start')
+              }
+
+              if (event.key === 'Escape') {
+                event.preventDefault()
+                const resetTitle = normalizeProjectTitle(projectRef.current?.title)
+                setTitle(resetTitle)
+                titleRef.current = resetTitle
+              }
+            }}
+          />
+          <EditorContent editor={editor} />
+        </div>
       </div>
 
       <StatusBar

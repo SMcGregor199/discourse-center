@@ -12,50 +12,6 @@ interface SearchResult {
   citations: number
 }
 
-interface ContextData {
-  question: string
-  currentProject: {
-    title: string
-    citationStyle: string
-    sources: Array<{
-      id: string
-      type: string
-      title: string
-      author: string
-      year: string
-      publisher?: string
-      url?: string
-      journal?: string
-      volume?: string
-      pages?: string
-      doi?: string
-      createdAt: string
-    }>
-  }
-  otherProjects?: Array<{
-    title: string
-    content: string
-    sources: Array<{
-      id: string
-      type: string
-      title: string
-      author: string
-      year: string
-      publisher?: string
-      url?: string
-      journal?: string
-      volume?: string
-      pages?: string
-      doi?: string
-      createdAt: string
-    }>
-  }>
-  images?: Array<{
-    name: string
-    type: string
-  }>
-}
-
 type AIResearchModalProps = {
   selectedText: string
   currentProject: Project
@@ -90,58 +46,6 @@ export function AIResearchModal({ selectedText, currentProject, onInsert, onClos
         ? prev.filter(id => id !== imageId)
         : [...prev, imageId]
     )
-  }
-
-  const buildContext = (): ContextData => {
-    const context: ContextData = {
-      question: selectedText,
-      currentProject: {
-        title: currentProject.title,
-        citationStyle: currentProject.citationStyle,
-        sources: includeCurrentSources ? currentProject.sources : [],
-      },
-    }
-
-    if (includeOtherProjects) {
-      context.otherProjects = allProjects
-        .filter(p => selectedProjects.includes(p.id))
-        .map(p => ({
-          title: p.title,
-          content: extractText(p.content),
-          sources: p.sources,
-        }))
-    }
-
-    if (includeImages) {
-      context.images = allImages
-        .filter(img => selectedImages.includes(img.id))
-        .map(img => ({
-          name: img.name,
-          type: img.type,
-        }))
-    }
-
-    return context
-  }
-
-  const extractText = (content: unknown): string => {
-    if (!content || typeof content !== 'object' || !('content' in content)) return ''
-    const contentObj = content as { content?: unknown[] }
-    return contentObj.content?.map((node: unknown) => {
-      if (typeof node === 'object' && node !== null) {
-        const nodeObj = node as { type?: string; text?: string; content?: unknown[] }
-        if (nodeObj.type === 'text') return nodeObj.text || ''
-        if (nodeObj.type === 'paragraph' && nodeObj.content) {
-          return nodeObj.content.map((n: unknown) => {
-            if (typeof n === 'object' && n !== null && 'text' in n) {
-              return (n as { text?: string }).text || ''
-            }
-            return ''
-          }).join(' ')
-        }
-      }
-      return ''
-    }).join(' ') || ''
   }
 
   const handleSearch = async () => {
