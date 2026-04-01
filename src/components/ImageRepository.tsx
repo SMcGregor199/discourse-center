@@ -1,11 +1,12 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { loadImages, uploadImage, deleteImage, formatFileSize, type StoredImage } from '../lib/storage'
+import { loadImages, uploadImage, deleteImage, updateImage, formatFileSize, type StoredImage } from '../lib/storage'
 
 export function ImageRepository() {
   const [images, setImages] = useState<StoredImage[]>(() => loadImages())
   const [isUploading, setIsUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [savingImageId, setSavingImageId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
 
@@ -40,6 +41,25 @@ export function ImageRepository() {
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString()
+  }
+
+  const handleNotesChange = (imageId: string, notes: string) => {
+    setImages(prev =>
+      prev.map(image => (image.id === imageId ? { ...image, notes } : image)),
+    )
+  }
+
+  const handleNotesBlur = (imageId: string, notes: string) => {
+    setSavingImageId(imageId)
+    const updatedImage = updateImage(imageId, { notes })
+
+    if (updatedImage) {
+      setImages(prev =>
+        prev.map(image => (image.id === imageId ? updatedImage : image)),
+      )
+    }
+
+    setSavingImageId(currentId => (currentId === imageId ? null : currentId))
   }
 
   return (
@@ -108,6 +128,21 @@ export function ImageRepository() {
                   <span className="file-size">{formatFileSize(image.size)}</span>
                   <span className="upload-date">{formatDate(image.uploadedAt)}</span>
                 </div>
+                <label className="image-notes-label" htmlFor={`image-notes-${image.id}`}>
+                  Image notes
+                </label>
+                <textarea
+                  id={`image-notes-${image.id}`}
+                  className="image-notes-input"
+                  value={image.notes}
+                  onChange={(event) => handleNotesChange(image.id, event.target.value)}
+                  onBlur={(event) => handleNotesBlur(image.id, event.target.value)}
+                  placeholder="Add notes, context, or a reminder for this image"
+                  rows={4}
+                />
+                <p className="image-notes-help">
+                  {savingImageId === image.id ? 'Saving notes...' : 'Notes can be inserted into project documents from the image picker.'}
+                </p>
               </div>
               <div className="image-actions">
                 <button 

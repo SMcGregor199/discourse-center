@@ -96,6 +96,26 @@ html, body {
   border-color: #d1d5db;
 }
 
+.citation-repo-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #6b7280;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.citation-repo-btn:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
 .new-project-btn {
   display: flex;
   align-items: center;
@@ -255,6 +275,10 @@ html, body {
   min-height: 100vh;
 }
 
+.citations-library {
+  min-height: 100vh;
+}
+
 .repository-header {
   display: flex;
   justify-content: space-between;
@@ -342,6 +366,98 @@ html, body {
   font-size: 0.95rem;
 }
 
+.citations-summary {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  color: #475569;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.citations-projects {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.citation-project-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.citation-project-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.citation-project-header h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.35rem;
+  color: #1f2937;
+}
+
+.citation-project-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.92rem;
+}
+
+.citation-project-open {
+  border: 1px solid #d6dfeb;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #475569;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.citation-project-open:hover {
+  background: #f8fafc;
+  border-color: #c5d2e2;
+}
+
+.citation-source-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.citation-source-item {
+  border-top: 1px solid #edf2f7;
+  padding-top: 1rem;
+}
+
+.citation-source-item:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.citation-source-item h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+  color: #1f2937;
+}
+
+.citation-source-meta {
+  margin: 0 0 0.45rem;
+  color: #64748b;
+  font-size: 0.88rem;
+}
+
+.citation-source-entry {
+  margin: 0;
+  color: #334155;
+  line-height: 1.55;
+}
+
 .images-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -400,6 +516,7 @@ html, body {
   align-items: center;
   color: #6b7280;
   font-size: 0.875rem;
+  margin-bottom: 0.75rem;
 }
 
 .file-size {
@@ -414,6 +531,40 @@ html, body {
   padding: 0 1rem 1rem;
   display: flex;
   justify-content: flex-end;
+}
+
+.image-notes-label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.image-notes-input {
+  width: 100%;
+  resize: vertical;
+  min-height: 6rem;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font: inherit;
+  color: #1f2937;
+  background: #ffffff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.image-notes-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+.image-notes-help {
+  margin: 0.5rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: #6b7280;
 }
 
 .delete-btn {
@@ -432,36 +583,20 @@ html, body {
 }
 
 /* Image Browser Modal Styles */
-.image-browser-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 1rem;
-}
-
-.image-browser-modal {
-  background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
-  max-width: 900px;
-  width: 100%;
-  max-height: 80vh;
+.image-browser-panel {
+  width: min(360px, 38vw);
+  min-width: 300px;
+  border-left: 1px solid #e2e8f0;
+  background: #f8fafc;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  min-height: 0;
 }
 
 .browser-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   padding: 1.5rem;
   border-bottom: 1px solid #e5e7eb;
 }
@@ -470,6 +605,12 @@ html, body {
   margin: 0;
   font-size: 1.5rem;
   color: #1f2937;
+}
+
+.browser-subtitle {
+  margin: 0.35rem 0 0;
+  font-size: 0.9rem;
+  color: #6b7280;
 }
 
 .close-btn {
@@ -531,24 +672,23 @@ html, body {
   font-size: 0.95rem;
 }
 
-.browser-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+.browser-list {
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
 }
 
 .browser-image-card {
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
-  cursor: pointer;
   transition: all 0.2s ease;
+  background: #ffffff;
 }
 
 .browser-image-card:hover {
   border-color: #3b82f6;
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
-  transform: translateY(-2px);
 }
 
 .browser-image-preview {
@@ -583,16 +723,39 @@ html, body {
 }
 
 .browser-image-meta {
-  margin: 0;
+  margin: 0 0 0.5rem;
   font-size: 0.75rem;
   color: #6b7280;
 }
 
-.browser-footer {
-  padding: 1rem 1.5rem;
-  border-top: 1px solid #e5e7eb;
-  display: flex;
-  justify-content: flex-end;
+.browser-image-notes {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: #4b5563;
+  white-space: pre-wrap;
+}
+
+.browser-image-actions {
+  margin-top: 0.75rem;
+}
+
+.insert-image-btn {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #1e3a8a;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.insert-image-btn:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
 }
 
 .cancel-btn {
@@ -1479,7 +1642,7 @@ html, body {
   flex: 1;
   overflow: hidden;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   border-bottom: none;
   min-height: 0;
 }
@@ -1643,6 +1806,14 @@ html, body {
     padding: 1rem 0.65rem 1.5rem;
   }
 
+  .image-browser-panel {
+    width: 100%;
+    min-width: 0;
+    border-left: none;
+    border-top: 1px solid #e2e8f0;
+    max-height: 45vh;
+  }
+
   .dashboard-header {
     flex-direction: column;
     align-items: flex-start;
@@ -1664,6 +1835,14 @@ html, body {
   .editor-content {
     min-height: 260px;
     padding: 0.85rem;
+  }
+
+  .app.app--editor .editor-surface {
+    flex-direction: column;
+  }
+
+  .app.app--editor .editor-scroll-region {
+    padding: 1.25rem 1rem 2rem;
   }
 }
 

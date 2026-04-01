@@ -257,7 +257,7 @@ export function EditorShell() {
     if (editor) {
       editor.chain().focus().setImage({ src: image.dataUrl, alt: image.name }).run()
     }
-    setShowImageBrowser(false)
+    setFeedback(`Inserted ${image.name}`)
   }
 
   const openCitationManager = () => {
@@ -350,6 +350,12 @@ export function EditorShell() {
           />
           <EditorContent editor={editor} />
         </div>
+        {showImageBrowser && (
+          <ImageBrowser
+            onSelectImage={selectImage}
+            onClose={closeImageBrowser}
+          />
+        )}
       </div>
 
       <StatusBar
@@ -359,13 +365,6 @@ export function EditorShell() {
         onCopyJson={copyJson}
         onClear={clearDocument}
       />
-
-      {showImageBrowser && (
-        <ImageBrowser
-          onSelectImage={selectImage}
-          onClose={closeImageBrowser}
-        />
-      )}
 
       {showCitationManager && project && (
         <div className="citation-manager-overlay">

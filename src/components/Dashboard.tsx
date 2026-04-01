@@ -11,42 +11,7 @@ import {
 import { CitationStyleSelector } from './CitationStyleSelector'
 
 export function Dashboard() {
-  const [projects, setProjects] = useState<Project[]>(() => {
-    // Initialize state directly and create sample project if needed
-    const loadedProjects = loadProjects()
-    
-    if (loadedProjects.length === 0) {
-      // Create sample project during initial state setup
-      const sampleProject = createProject('Heartbeat of Weight')
-      sampleProject.content = {
-        type: 'doc',
-        content: [
-          {
-            type: 'heading',
-            attrs: { level: 1 },
-            content: [{ type: 'text', text: 'Heartbeat of Weight' }],
-          },
-          {
-            type: 'paragraph',
-            content: [
-              { type: 'text', text: 'The rhythmic pulse of gravity pulls us toward center, toward earth, toward truth. Each step a negotiation with mass, each movement a dance with the invisible force that shapes our existence.' }
-            ],
-          },
-          {
-            type: 'paragraph',
-            content: [
-              { type: 'text', text: 'We carry our histories in our bones, our memories in muscle, our futures in the uncertain space between where we stand and where we might yet go.' }
-            ],
-          },
-        ],
-      }
-      sampleProject.wordCount = 47 // Update word count to match the image
-      saveProject(sampleProject)
-      return [sampleProject]
-    }
-    
-    return loadedProjects
-  })
+  const [projects, setProjects] = useState<Project[]>(() => loadProjects())
   const navigate = useNavigate()
   const [showCitationSelector, setShowCitationSelector] = useState(false)
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null)
@@ -112,6 +77,10 @@ export function Dashboard() {
     navigate('/images')
   }
 
+  const openCitationsLibrary = () => {
+    navigate('/citations')
+  }
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     const now = new Date()
@@ -139,6 +108,9 @@ export function Dashboard() {
         <div className="header-actions">
           <button className="image-repo-btn" onClick={openImageRepository}>
             📷 Images
+          </button>
+          <button className="citation-repo-btn" onClick={openCitationsLibrary}>
+            📚 Citations
           </button>
           <button className="new-project-btn" onClick={createNewProject}>
             <span className="plus-icon">+</span>

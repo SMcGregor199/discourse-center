@@ -4,6 +4,7 @@ export const PROJECTS_STORAGE_KEY = 'discourse-center:projects'
 export const CURRENT_PROJECT_KEY = 'discourse-center:current-project'
 export const IMAGES_STORAGE_KEY = 'discourse-center:images'
 export const DEFAULT_PROJECT_TITLE = 'Untitled Document'
+export const INITIAL_PROJECT_TITLE = 'Chapter 1'
 
 export interface Project {
   id: string
@@ -39,6 +40,7 @@ export interface StoredImage {
   dataUrl: string
   size: number
   type: string
+  notes: string
   uploadedAt: string
 }
 
@@ -47,12 +49,19 @@ export const DEFAULT_DOCUMENT: JSONContent = {
   content: [
     {
       type: 'paragraph',
-      content: [{ type: 'text', text: 'This editor auto-saves to local storage.' }],
-    },
-    {
-      type: 'paragraph',
     },
   ],
+}
+
+function createDefaultDocument(): JSONContent {
+  return {
+    type: 'doc',
+    content: [
+      {
+        type: 'paragraph',
+      },
+    ],
+  }
 }
 
 function isJsonContent(value: unknown): value is JSONContent {
@@ -70,6 +79,13 @@ function isStoredImage(value: unknown): value is StoredImage {
     'type' in value &&
     'uploadedAt' in value
   )
+}
+
+function normalizeStoredImage(value: StoredImage): StoredImage {
+  return {
+    ...value,
+    notes: typeof value.notes === 'string' ? value.notes : '',
+  }
 }
 
 function isProject(value: unknown): value is Project {
@@ -97,7 +113,7 @@ export function loadImages(): StoredImage[] {
       return []
     }
 
-    return parsed.filter(isStoredImage)
+    return parsed.filter(isStoredImage).map(normalizeStoredImage)
   } catch {
     return []
   }
@@ -125,6 +141,25 @@ export function saveImage(image: StoredImage): void {
   saveImages(images)
 }
 
+export function updateImage(id: string, updates: Partial<StoredImage>): StoredImage | null {
+  const images = loadImages()
+  const existingIndex = images.findIndex(image => image.id === id)
+
+  if (existingIndex === -1) {
+    return null
+  }
+
+  const updatedImage: StoredImage = {
+    ...images[existingIndex],
+    ...updates,
+    notes: typeof updates.notes === 'string' ? updates.notes : images[existingIndex].notes,
+  }
+
+  images[existingIndex] = updatedImage
+  saveImages(images)
+  return updatedImage
+}
+
 export function deleteImage(id: string): void {
   const images = loadImages()
   const filtered = images.filter(image => image.id !== id)
@@ -144,6 +179,7 @@ export async function uploadImage(file: File): Promise<StoredImage> {
           dataUrl,
           size: file.size,
           type: file.type,
+          notes: '',
           uploadedAt: new Date().toISOString(),
         }
         
@@ -344,7 +380,9 @@ export function loadProjects(): Project[] {
   try {
     const raw = localStorage.getItem(PROJECTS_STORAGE_KEY)
     if (!raw) {
-      return []
+      const initialProject = createInitialProject()
+      saveProjects([initialProject])
+      return [initialProject]
     }
 
     const parsed = JSON.parse(raw) as unknown
@@ -389,16 +427,7 @@ export function deleteProject(id: string): void {
 export function createProject(title?: string, citationStyle: CitationStyle = 'mla'): Project {
   const now = new Date().toISOString()
   const projectTitle = normalizeProjectTitle(title)
-  
-  const content: JSONContent = {
-    type: 'doc',
-    content: [
-      {
-        type: 'paragraph',
-        content: [{ type: 'text', text: 'Start writing...' }],
-      },
-    ],
-  }
+  const content = createDefaultDocument()
 
   return {
     id: crypto.randomUUID(),
@@ -410,6 +439,10 @@ export function createProject(title?: string, citationStyle: CitationStyle = 'ml
     citationStyle,
     sources: [],
   }
+}
+
+function createInitialProject(): Project {
+  return createProject(INITIAL_PROJECT_TITLE)
 }
 
 export function getCurrentProjectId(): string | null {
