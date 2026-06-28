@@ -5,6 +5,8 @@ import App from '../src/App'
 import {
   PROJECTS_STORAGE_KEY,
   createAnnotation,
+  createClaim,
+  createDraftPassage,
   createProject,
   createResearchItem,
   loadProject,
@@ -15,6 +17,53 @@ beforeEach(() => {
   localStorage.clear()
   window.history.pushState({}, '', '/')
 })
+
+function createAnnotatedProject(title = 'Annotated Project') {
+  const project = createProject(title)
+  const source = {
+    id: 'source-archival-method',
+    type: 'book' as const,
+    title: 'Archival Method',
+    author: 'Jordan Smith',
+    year: '2023',
+    publisher: 'Example Press',
+    createdAt: '2026-01-01T00:00:00.000Z',
+  }
+  saveProject({
+    ...project,
+    sources: [source],
+  })
+
+  const researchItem = createResearchItem(project.id, {
+    title: 'Archive memo',
+    kind: 'source',
+    description: 'Memo from the archive collection.',
+    sourceId: source.id,
+    locator: 'p. 4',
+  })
+
+  if (!researchItem) {
+    throw new Error('Could not create test research item')
+  }
+
+  const annotation = createAnnotation(project.id, {
+    researchItemId: researchItem.id,
+    note: 'The memo shows researchers treating method as an interpretive practice.',
+    excerpt: 'method as interpretation',
+    tags: ['method'],
+  })
+
+  if (!annotation) {
+    throw new Error('Could not create test annotation')
+  }
+
+  return {
+    project: loadProject(project.id) ?? project,
+    source,
+    researchItem,
+    annotation,
+  }
+}
 
 test('renders dashboard projects', () => {
   render(<App />)
@@ -269,6 +318,182 @@ test('workflow home reflects research item and annotation progress', () => {
   expect(within(researchItemStep as HTMLElement).getByText(/complete/i)).toBeInTheDocument()
   expect(within(annotationStep as HTMLElement).getByText(/complete/i)).toBeInTheDocument()
   expect(within(claimStep as HTMLElement).getByText(/current/i)).toBeInTheDocument()
+})
+
+test('claim builder renders for a project with an annotation', () => {
+  const { project } = createAnnotatedProject('Claim Render Project')
+  window.history.pushState({}, '', `/projects/${project.id}/claims/new`)
+
+  render(<App />)
+
+  expect(screen.getByRole('heading', { name: /build a claim/i })).toBeInTheDocument()
+  expect(screen.getByLabelText(/^annotation$/i)).toHaveDisplayValue(/archive memo/i)
+  const annotationContext = screen.getByRole('heading', { name: /archive memo/i }).closest('section')
+  expect(annotationContext).not.toBeNull()
+  expect(within(annotationContext as HTMLElement).getByText(/method as an interpretive practice/i)).toBeInTheDocument()
+  expect(screen.getByLabelText(/claim text/i)).toBeInTheDocument()
+})
+
+test('creates and persists a claim linked to an annotation', async () => {
+  const user = userEvent.setup()
+  const { project, annotation, source } = createAnnotatedProject('Claim Persistence Project')
+  window.history.pushState({}, '', `/projects/${project.id}/claims/new`)
+
+  render(<App />)
+
+  await user.type(
+    screen.getByLabelText(/claim text/i),
+    'Archival method depends on interpretation rather than neutral collection.',
+  )
+  await user.click(screen.getByRole('button', { name: /save claim/i }))
+
+  expect(await screen.findByRole('status')).toHaveTextContent(/saved claim/i)
+
+  const updatedProject = loadProject(project.id)
+  expect(updatedProject?.claims).toHaveLength(1)
+  expect(updatedProject?.claims[0]).toMatchObject({
+    text: 'Archival method depends on interpretation rather than neutral collection.',
+    annotationIds: [annotation.id],
+    sourceIds: [source.id],
+    status: 'draft',
+  })
+  expect(updatedProject?.workflowState.currentStep).toBe('draft')
+  expect(updatedProject?.workflowState.completedSteps).toEqual(
+    expect.arrayContaining(['project', 'research-item', 'annotation', 'claim']),
+  )
+})
+
+test('draft passage UI renders for a project with a claim', () => {
+  const { project, annotation } = createAnnotatedProject('Draft Render Project')
+  createClaim(project.id, {
+    annotationIds: [annotation.id],
+    text: 'Archival method is interpretive.',
+  })
+  window.history.pushState({}, '', `/projects/${project.id}/drafts/new`)
+
+  render(<App />)
+
+  expect(screen.getByRole('heading', { name: /draft from evidence/i })).toBeInTheDocument()
+  expect(screen.getByLabelText(/^claim$/i)).toHaveDisplayValue(/archival method is interpretive/i)
+  const evidenceContext = screen.getByRole('heading', { name: /selected claim/i }).closest('section')
+  expect(evidenceContext).not.toBeNull()
+  expect(within(evidenceContext as HTMLElement).getByText(/archival method is interpretive/i)).toBeInTheDocument()
+  expect(within(evidenceContext as HTMLElement).getByText('(Smith 2023)')).toBeInTheDocument()
+  expect(screen.getByLabelText(/^draft passage \*$/i)).toBeInTheDocument()
+})
+
+test('creates and persists a draft passage linked to a claim and source', async () => {
+  const user = userEvent.setup()
+  const { project, annotation, source } = createAnnotatedProject('Draft Persistence Project')
+  const claim = createClaim(project.id, {
+    annotationIds: [annotation.id],
+    text: 'Archival method is interpretive.',
+  })
+  window.history.pushState({}, '', `/projects/${project.id}/drafts/new`)
+
+  render(<App />)
+
+  await user.type(screen.getByLabelText(/draft title/i), 'Interpretive method paragraph')
+  await user.type(
+    screen.getByLabelText(/^draft passage \*$/i),
+    'Archival method should be understood as interpretive practice grounded in situated evidence.',
+  )
+  await user.click(screen.getByRole('button', { name: /save draft passage/i }))
+
+  expect(await screen.findByRole('status')).toHaveTextContent(/saved draft passage/i)
+
+  const updatedProject = loadProject(project.id)
+  expect(updatedProject?.draftPassages).toHaveLength(1)
+  expect(updatedProject?.draftPassages[0]).toMatchObject({
+    title: 'Interpretive method paragraph',
+    text: 'Archival method should be understood as interpretive practice grounded in situated evidence.',
+    claimIds: [claim?.id],
+    sourceIds: [source.id],
+    citationText: '(Smith 2023)',
+  })
+  expect(updatedProject?.workflowState.currentStep).toBe('review')
+  expect(updatedProject?.workflowState.completedSteps).toEqual(
+    expect.arrayContaining(['project', 'research-item', 'annotation', 'claim', 'draft']),
+  )
+})
+
+test('workflow home next-step guidance moves from claim to draft to review', () => {
+  const { project, annotation } = createAnnotatedProject('Phase Four Guidance Project')
+  window.history.pushState({}, '', `/projects/${project.id}`)
+
+  const firstRender = render(<App />)
+
+  expect(screen.getByText(/next: develop a claim/i)).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: /build claim/i })).toHaveAttribute(
+    'href',
+    `/projects/${project.id}/claims/new`,
+  )
+
+  firstRender.unmount()
+  const claim = createClaim(project.id, {
+    annotationIds: [annotation.id],
+    text: 'Archival method is interpretive.',
+  })
+  const secondRender = render(<App />)
+
+  expect(screen.getByText(/next: draft with evidence nearby/i)).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: /draft passage/i })).toHaveAttribute(
+    'href',
+    `/projects/${project.id}/drafts/new`,
+  )
+
+  expect(screen.getByText('Claims').nextElementSibling).toHaveTextContent('1')
+
+  secondRender.unmount()
+  createDraftPassage(project.id, {
+    title: 'Review-ready passage',
+    text: 'Archival method is interpretive.',
+    claimIds: [claim?.id ?? ''],
+    sourceIds: [],
+  })
+  render(<App />)
+
+  expect(screen.getByText(/next: review provenance/i)).toBeInTheDocument()
+  expect(screen.getByText('Draft passages').nextElementSibling).toHaveTextContent('1')
+  const workflowProgress = screen.getByRole('heading', { name: 'Workflow progress' }).closest('section')
+  expect(workflowProgress).not.toBeNull()
+  const draftStep = within(workflowProgress as HTMLElement).getByText('Draft').closest('li')
+  const reviewStep = within(workflowProgress as HTMLElement).getByText('Review').closest('li')
+  expect(draftStep).not.toBeNull()
+  expect(reviewStep).not.toBeNull()
+  expect(within(draftStep as HTMLElement).getByText(/complete/i)).toBeInTheDocument()
+  expect(within(reviewStep as HTMLElement).getByText(/current/i)).toBeInTheDocument()
+})
+
+test('old normalized projects can open claim and draft screens', () => {
+  const legacyProject = {
+    id: 'legacy-phase-four-project',
+    title: 'Legacy Phase Four Project',
+    content: {
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [{ type: 'text', text: 'Legacy prose' }],
+        },
+      ],
+    },
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-02T00:00:00.000Z',
+    wordCount: 2,
+    citationStyle: 'mla',
+    sources: [],
+  }
+  localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify([legacyProject]))
+  window.history.pushState({}, '', '/projects/legacy-phase-four-project/claims/new')
+
+  const { unmount } = render(<App />)
+  expect(screen.getByRole('heading', { name: /add an annotation first/i })).toBeInTheDocument()
+
+  unmount()
+  window.history.pushState({}, '', '/projects/legacy-phase-four-project/drafts/new')
+  render(<App />)
+  expect(screen.getByRole('heading', { name: /add a claim first/i })).toBeInTheDocument()
 })
 
 test('old normalized projects can use research item and annotation screens', async () => {
