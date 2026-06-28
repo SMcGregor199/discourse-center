@@ -136,7 +136,7 @@ export function AnnotationPanel() {
         </div>
       ) : (
         <div className="workflow-form-layout">
-          <form className="workflow-form-card" onSubmit={handleSubmit}>
+          <form className="workflow-form-card" onSubmit={handleSubmit} data-tutorial-target="annotation-form">
             {error && (
               <div className="form-error" role="alert">
                 {error}

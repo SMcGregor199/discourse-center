@@ -102,7 +102,7 @@ export function Dashboard() {
   }
 
   return (
-    <div className="dashboard">
+    <div className="dashboard" data-tutorial-target="dashboard">
       <div className="dashboard-header">
         <h1>Your Projects</h1>
         <div className="header-actions">
@@ -112,7 +112,7 @@ export function Dashboard() {
           <button className="citation-repo-btn" onClick={openCitationsLibrary}>
             📚 Citations
           </button>
-          <button className="new-project-btn" onClick={createNewProject}>
+          <button className="new-project-btn" onClick={createNewProject} data-tutorial-target="new-project">
             <span className="plus-icon">+</span>
             <span>New</span>
           </button>
@@ -125,6 +125,7 @@ export function Dashboard() {
             key={project.id} 
             className="project-card"
             onClick={() => openProject(project.id)}
+            data-tutorial-target="project-card"
           >
             <div className="project-card-header">
               {editingProjectId === project.id ? (

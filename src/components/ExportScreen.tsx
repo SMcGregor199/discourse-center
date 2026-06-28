@@ -139,7 +139,11 @@ export function ExportScreen() {
         </div>
       ) : (
         <div className="workflow-form-layout">
-          <section className="workflow-form-card" aria-labelledby="markdown-preview-heading">
+          <section
+            className="workflow-form-card"
+            aria-labelledby="markdown-preview-heading"
+            data-tutorial-target="export-card"
+          >
             <div className="workflow-card-header">
               <div>
                 <p className="workflow-card-kicker">Markdown</p>

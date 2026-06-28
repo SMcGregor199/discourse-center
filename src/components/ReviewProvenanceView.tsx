@@ -136,7 +136,11 @@ export function ReviewProvenanceView() {
       )}
 
       <div className="workflow-form-layout">
-        <section className="workflow-form-card provenance-chain" aria-labelledby="provenance-chain-heading">
+        <section
+          className="workflow-form-card provenance-chain"
+          aria-labelledby="provenance-chain-heading"
+          data-tutorial-target="review-chain"
+        >
           <div className="workflow-card-header">
             <div>
               <p className="workflow-card-kicker">Traceability checklist</p>

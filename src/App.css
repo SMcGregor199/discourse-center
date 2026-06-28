@@ -752,6 +752,168 @@ html, body {
   line-height: 1.6;
 }
 
+/* Guided Tutorial */
+.tutorial-prompt-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.46);
+}
+
+.tutorial-dialog,
+.tutorial-overlay {
+  border: 1px solid #d6dfeb;
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at top left, rgba(15, 118, 110, 0.12), transparent 32%),
+    #ffffff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.24);
+  color: #172033;
+}
+
+.tutorial-dialog {
+  width: min(100%, 520px);
+  padding: 1.5rem;
+}
+
+.tutorial-dialog:focus-visible,
+.tutorial-overlay:focus-visible {
+  outline: 3px solid rgba(15, 118, 110, 0.32);
+  outline-offset: 4px;
+}
+
+.tutorial-dialog h2,
+.tutorial-overlay h2 {
+  margin: 0.5rem 0;
+  color: #0f172a;
+  font-size: 1.45rem;
+}
+
+.tutorial-dialog p,
+.tutorial-overlay p {
+  color: #475569;
+  line-height: 1.55;
+}
+
+.tutorial-overlay {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 35;
+  width: min(calc(100vw - 2rem), 420px);
+  padding: 1.1rem;
+}
+
+.tutorial-overlay-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.tutorial-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1rem;
+}
+
+.tutorial-target-note,
+.tutorial-status {
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  background: #eff6ff;
+  padding: 0.75rem;
+  margin: 0.75rem 0 0;
+}
+
+.tutorial-status.is-complete {
+  border-color: #99f6e4;
+  background: #f0fdfa;
+  color: #115e59;
+  font-weight: 700;
+}
+
+.tutorial-text-button {
+  border: none;
+  background: transparent;
+  color: #475569;
+  cursor: pointer;
+  font-weight: 800;
+  text-decoration: underline;
+}
+
+.tutorial-text-button:hover {
+  color: #0f172a;
+}
+
+.tutorial-restart-button {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 30;
+  border: 1px solid #d6dfeb;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #334155;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14);
+  cursor: pointer;
+  font-weight: 800;
+  padding: 0.7rem 1rem;
+}
+
+.tutorial-restart-button:hover {
+  background: #f8fafc;
+}
+
+html[data-tutorial-step] [data-tutorial-target] {
+  scroll-margin: 7rem;
+}
+
+html[data-tutorial-step="intro"] [data-tutorial-target="dashboard"],
+html[data-tutorial-step="intro"] [data-tutorial-target="workflow-home"],
+html[data-tutorial-step="open-project"] [data-tutorial-target="new-project"],
+html[data-tutorial-step="open-project"] [data-tutorial-target="project-card"],
+html[data-tutorial-step="research-item"] [data-tutorial-target="research-item-form"],
+html[data-tutorial-step="annotation"] [data-tutorial-target="annotation-form"],
+html[data-tutorial-step="claim"] [data-tutorial-target="claim-form"],
+html[data-tutorial-step="draft"] [data-tutorial-target="draft-form"],
+html[data-tutorial-step="review"] [data-tutorial-target="review-chain"],
+html[data-tutorial-step="export"] [data-tutorial-target="export-card"] {
+  position: relative;
+  outline: 4px solid #f59e0b;
+  outline-offset: 6px;
+  box-shadow: 0 0 0 10px rgba(245, 158, 11, 0.14), 0 18px 45px rgba(15, 23, 42, 0.12);
+}
+
+html[data-tutorial-step="intro"] [data-tutorial-target="dashboard"]::before,
+html[data-tutorial-step="intro"] [data-tutorial-target="workflow-home"]::before,
+html[data-tutorial-step="open-project"] [data-tutorial-target="new-project"]::before,
+html[data-tutorial-step="open-project"] [data-tutorial-target="project-card"]::before,
+html[data-tutorial-step="research-item"] [data-tutorial-target="research-item-form"]::before,
+html[data-tutorial-step="annotation"] [data-tutorial-target="annotation-form"]::before,
+html[data-tutorial-step="claim"] [data-tutorial-target="claim-form"]::before,
+html[data-tutorial-step="draft"] [data-tutorial-target="draft-form"]::before,
+html[data-tutorial-step="review"] [data-tutorial-target="review-chain"]::before,
+html[data-tutorial-step="export"] [data-tutorial-target="export-card"]::before {
+  position: absolute;
+  top: -0.9rem;
+  left: 1rem;
+  z-index: 3;
+  border-radius: 999px;
+  background: #92400e;
+  color: #ffffff;
+  content: "Tutorial target";
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  padding: 0.28rem 0.55rem;
+  text-transform: uppercase;
+}
+
 /* Image Repository Styles */
 .image-repository {
   min-height: 100vh;

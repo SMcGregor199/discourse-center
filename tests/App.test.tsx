@@ -13,9 +13,18 @@ import {
   loadProject,
   saveProject,
 } from '../src/lib/storage'
+import { TUTORIAL_STORAGE_KEY, loadTutorialState, updateTutorialProgress } from '../src/lib/tutorial'
 
 beforeEach(() => {
   localStorage.clear()
+  localStorage.setItem(
+    TUTORIAL_STORAGE_KEY,
+    JSON.stringify({
+      status: 'dismissed',
+      stepId: 'intro',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    }),
+  )
   window.history.pushState({}, '', '/')
 })
 
@@ -105,6 +114,123 @@ test('renders dashboard projects', () => {
   expect(screen.getByRole('heading', { name: /your projects/i })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /images/i })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /new/i })).toBeInTheDocument()
+})
+
+test('first-run tutorial prompt appears', () => {
+  localStorage.removeItem(TUTORIAL_STORAGE_KEY)
+
+  render(<App />)
+
+  expect(screen.getByRole('dialog', { name: /would you like to go through the tutorial/i })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /start tutorial/i })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /no, continue normally/i })).toBeInTheDocument()
+})
+
+test('selecting no dismisses the tutorial prompt', async () => {
+  const user = userEvent.setup()
+  localStorage.removeItem(TUTORIAL_STORAGE_KEY)
+
+  render(<App />)
+
+  await user.click(screen.getByRole('button', { name: /no, continue normally/i }))
+
+  expect(screen.queryByRole('dialog', { name: /would you like to go through the tutorial/i })).not.toBeInTheDocument()
+  expect(loadTutorialState().status).toBe('dismissed')
+})
+
+test('selecting yes starts the guided tutorial', async () => {
+  const user = userEvent.setup()
+  localStorage.removeItem(TUTORIAL_STORAGE_KEY)
+
+  render(<App />)
+
+  await user.click(screen.getByRole('button', { name: /start tutorial/i }))
+
+  expect(screen.getByRole('dialog', { name: /evidence becomes prose here/i })).toBeInTheDocument()
+  expect(screen.getByText(/current target:/i)).toHaveTextContent(/dashboard or project workflow home/i)
+  expect(loadTutorialState()).toMatchObject({
+    status: 'active',
+    stepId: 'intro',
+  })
+})
+
+test('tutorial step advances only after the required action is completed', async () => {
+  const user = userEvent.setup()
+  const project = createProject('Tutorial Project')
+  saveProject(project)
+  updateTutorialProgress('open-project')
+
+  render(<App />)
+
+  expect(screen.getByRole('dialog', { name: /create or open a project/i })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /next tutorial step/i })).toBeDisabled()
+
+  await user.click(screen.getByRole('heading', { name: /tutorial project/i }))
+  await user.click(screen.getByRole('button', { name: /next tutorial step/i }))
+
+  expect(screen.getByRole('dialog', { name: /add a research item/i })).toBeInTheDocument()
+  expect(loadTutorialState()).toMatchObject({
+    status: 'active',
+    stepId: 'research-item',
+    projectId: project.id,
+  })
+})
+
+test('tutorial can be exited', async () => {
+  const user = userEvent.setup()
+  updateTutorialProgress('intro')
+
+  render(<App />)
+
+  await user.click(screen.getByRole('button', { name: /exit tutorial/i }))
+
+  expect(screen.queryByRole('dialog', { name: /evidence becomes prose here/i })).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /restart tutorial/i })).toBeInTheDocument()
+  expect(loadTutorialState().status).toBe('dismissed')
+})
+
+test('tutorial can be restarted later', async () => {
+  const user = userEvent.setup()
+
+  render(<App />)
+
+  await user.click(screen.getByRole('button', { name: /restart tutorial/i }))
+
+  expect(screen.getByRole('dialog', { name: /evidence becomes prose here/i })).toBeInTheDocument()
+  expect(loadTutorialState()).toMatchObject({
+    status: 'active',
+    stepId: 'intro',
+  })
+})
+
+test('tutorial progress persists locally', async () => {
+  const user = userEvent.setup()
+  updateTutorialProgress('intro')
+
+  render(<App />)
+
+  await user.click(screen.getByRole('button', { name: /next tutorial step/i }))
+
+  expect(loadTutorialState()).toMatchObject({
+    status: 'active',
+    stepId: 'open-project',
+  })
+})
+
+test('tutorial does not prevent normal workflow completion', async () => {
+  const user = userEvent.setup()
+  const project = createProject('Tutorial Nonblocking Project')
+  saveProject(project)
+  updateTutorialProgress('research-item', project.id)
+  window.history.pushState({}, '', `/projects/${project.id}/research-items/new`)
+
+  render(<App />)
+
+  await user.type(screen.getByLabelText(/title/i), 'Tutorial evidence item')
+  await user.click(screen.getByRole('button', { name: /save research item/i }))
+
+  expect(await screen.findByRole('status')).toHaveTextContent(/saved tutorial evidence item/i)
+  expect(loadProject(project.id)?.researchItems).toHaveLength(1)
 })
 
 test('renames a project from the dashboard', async () => {

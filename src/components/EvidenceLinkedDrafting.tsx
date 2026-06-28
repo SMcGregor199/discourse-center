@@ -125,7 +125,7 @@ export function EvidenceLinkedDrafting() {
         </div>
       ) : (
         <div className="workflow-form-layout">
-          <form className="workflow-form-card" onSubmit={handleSubmit}>
+          <form className="workflow-form-card" onSubmit={handleSubmit} data-tutorial-target="draft-form">
             {error && (
               <div className="form-error" role="alert">
                 {error}

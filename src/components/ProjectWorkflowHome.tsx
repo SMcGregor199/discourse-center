@@ -358,7 +358,7 @@ export function ProjectWorkflowHome() {
   const currentStepLabel = getWorkflowStepLabel(project.workflowState.currentStep)
 
   return (
-    <section className="project-workflow" aria-labelledby="project-workflow-heading">
+    <section className="project-workflow" aria-labelledby="project-workflow-heading" data-tutorial-target="workflow-home">
       <header className="workflow-hero">
         <div>
           <button type="button" className="back-btn" onClick={() => navigate('/')}>
