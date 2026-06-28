@@ -68,10 +68,48 @@ function getNextStep(project: Project) {
   const currentStep = project.workflowState.currentStep
   const hasResearchItems = project.researchItems.length > 0
   const hasAnnotations = project.annotations.length > 0
+  const hasClaims = project.claims.length > 0
+  const hasDraftPassages = project.draftPassages.length > 0
 
   switch (currentStep) {
     case 'project':
     case 'research-item':
+      if (hasDraftPassages) {
+        return {
+          title: 'Next: review provenance',
+          description:
+            'Review and export arrive in the next phase. The saved draft passage is ready for provenance review.',
+          primaryHref: `/editor/${project.id}`,
+          primaryLabel: 'Open editor',
+          secondaryHref: `/projects/${project.id}/drafts/new`,
+          secondaryLabel: 'Add another draft',
+        }
+      }
+
+      if (hasClaims) {
+        return {
+          title: 'Next: draft with evidence nearby',
+          description:
+            'Use the saved claim and its linked evidence to write a focused draft passage.',
+          primaryHref: `/projects/${project.id}/drafts/new`,
+          primaryLabel: 'Draft passage',
+          secondaryHref: `/projects/${project.id}/claims/new`,
+          secondaryLabel: 'Add another claim',
+        }
+      }
+
+      if (hasAnnotations) {
+        return {
+          title: 'Next: develop a claim',
+          description:
+            'Turn the saved annotation into an arguable claim before drafting prose.',
+          primaryHref: `/projects/${project.id}/claims/new`,
+          primaryLabel: 'Build claim',
+          secondaryHref: `/projects/${project.id}/annotations/new`,
+          secondaryLabel: 'Add another annotation',
+        }
+      }
+
       if (hasResearchItems && !hasAnnotations) {
         return {
           title: 'Next: annotate the evidence',
@@ -94,6 +132,18 @@ function getNextStep(project: Project) {
         secondaryLabel: 'Review citations',
       }
     case 'annotation':
+      if (hasAnnotations) {
+        return {
+          title: 'Next: develop a claim',
+          description:
+            'Turn the saved annotation into an arguable claim before drafting prose.',
+          primaryHref: `/projects/${project.id}/claims/new`,
+          primaryLabel: 'Build claim',
+          secondaryHref: `/projects/${project.id}/annotations/new`,
+          secondaryLabel: 'Add another annotation',
+        }
+      }
+
       return {
         title: 'Next: annotate the evidence',
         description:
@@ -104,34 +154,58 @@ function getNextStep(project: Project) {
         secondaryLabel: 'Add another item',
       }
     case 'claim':
+      if (hasClaims) {
+        return {
+          title: 'Next: draft with evidence nearby',
+          description:
+            'Use the saved claim and its linked evidence to write a focused draft passage.',
+          primaryHref: `/projects/${project.id}/drafts/new`,
+          primaryLabel: 'Draft passage',
+          secondaryHref: `/projects/${project.id}/claims/new`,
+          secondaryLabel: 'Add another claim',
+        }
+      }
+
       return {
         title: 'Next: develop a claim',
         description:
-          'A claim builder is not part of Phase 3. The saved annotation is ready for the next implementation phase.',
-        primaryHref: `/editor/${project.id}`,
-        primaryLabel: 'Open editor',
+          'Turn the saved annotation into an arguable claim before drafting prose.',
+        primaryHref: `/projects/${project.id}/claims/new`,
+        primaryLabel: 'Build claim',
         secondaryHref: `/projects/${project.id}/annotations/new`,
         secondaryLabel: 'Add another annotation',
       }
     case 'draft':
+      if (hasDraftPassages) {
+        return {
+          title: 'Next: review provenance',
+          description:
+            'Review and export arrive in the next phase. The saved draft passage is ready for provenance review.',
+          primaryHref: `/editor/${project.id}`,
+          primaryLabel: 'Open editor',
+          secondaryHref: `/projects/${project.id}/drafts/new`,
+          secondaryLabel: 'Add another draft',
+        }
+      }
+
       return {
         title: 'Next: draft with evidence nearby',
         description:
-          'Use the existing editor for drafting. Evidence-linked drafting will be added in a later phase.',
-        primaryHref: `/editor/${project.id}`,
-        primaryLabel: 'Open editor',
-        secondaryHref: '/citations',
-        secondaryLabel: 'Manage citations',
+          'Use the saved claim and its linked evidence to write a focused draft passage.',
+        primaryHref: `/projects/${project.id}/drafts/new`,
+        primaryLabel: 'Draft passage',
+        secondaryHref: `/projects/${project.id}/claims/new`,
+        secondaryLabel: 'Add another claim',
       }
     case 'review':
       return {
         title: 'Next: review provenance',
         description:
-          'The review screen is not implemented yet. For now, keep sources and draft text visible through existing surfaces.',
+          'The review screen is not implemented in Phase 4. For now, keep sources and draft text visible through existing surfaces.',
         primaryHref: `/editor/${project.id}`,
         primaryLabel: 'Open editor',
-        secondaryHref: '/citations',
-        secondaryLabel: 'Review citations',
+        secondaryHref: `/projects/${project.id}/drafts/new`,
+        secondaryLabel: 'Add another draft',
       }
     case 'export':
       return {
