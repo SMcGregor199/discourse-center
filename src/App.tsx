@@ -3,6 +3,7 @@ import { Dashboard } from './components/Dashboard'
 import { EditorShell } from './components/EditorShell'
 import { ImageRepository } from './components/ImageRepository'
 import { CitationsLibrary } from './components/CitationsLibrary'
+import { ProjectWorkflowHome } from './components/ProjectWorkflowHome'
 import './App.css'
 
 function AppLayout() {
@@ -13,6 +14,7 @@ function AppLayout() {
     <main className={isEditorRoute ? 'app app--editor' : 'app'}>
       <Routes>
         <Route path="/" element={<Dashboard />} />
+        <Route path="/projects/:projectId" element={<ProjectWorkflowHome />} />
         <Route path="/editor/:projectId" element={<EditorShell />} />
         <Route path="/images" element={<ImageRepository />} />
         <Route path="/citations" element={<CitationsLibrary />} />

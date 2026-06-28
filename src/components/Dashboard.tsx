@@ -26,7 +26,7 @@ export function Dashboard() {
     saveProject(newProject)
     setProjects(prev => [newProject, ...prev])
     setShowCitationSelector(false)
-    navigate(`/editor/${newProject.id}`)
+    navigate(`/projects/${newProject.id}`)
   }
 
   const handleCitationSelectorCancel = () => {
@@ -37,7 +37,7 @@ export function Dashboard() {
     if (editingProjectId === projectId) {
       return
     }
-    navigate(`/editor/${projectId}`)
+    navigate(`/projects/${projectId}`)
   }
 
   const startRenamingProject = (project: Project) => {
