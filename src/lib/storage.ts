@@ -15,9 +15,100 @@ export interface Project {
   wordCount: number
   citationStyle: CitationStyle
   sources: Source[]
+  researchItems: ResearchItem[]
+  annotations: Annotation[]
+  claims: Claim[]
+  draftPassages: DraftPassage[]
+  exports: ExportRecord[]
+  workflowState: ProjectWorkflowState
 }
 
 export type CitationStyle = 'mla' | 'apa' | 'chicago' | 'harvard'
+
+export type WorkflowStep =
+  | 'project'
+  | 'research-item'
+  | 'annotation'
+  | 'claim'
+  | 'draft'
+  | 'review'
+  | 'export'
+
+export interface ProjectWorkflowState {
+  currentStep: WorkflowStep
+  completedSteps: WorkflowStep[]
+  activeResearchItemId?: string
+  activeAnnotationId?: string
+  activeClaimId?: string
+  activeDraftPassageId?: string
+}
+
+export type ResearchItemKind = 'source' | 'image' | 'object' | 'note'
+
+export interface ResearchItem {
+  id: string
+  projectId: string
+  kind: ResearchItemKind
+  title: string
+  description?: string
+  sourceId?: string
+  imageId?: string
+  url?: string
+  locator?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Annotation {
+  id: string
+  projectId: string
+  researchItemId: string
+  sourceId?: string
+  imageId?: string
+  excerpt?: string
+  note: string
+  tags: string[]
+  createdAt: string
+  updatedAt: string
+}
+
+export type ClaimStatus = 'draft' | 'ready' | 'used'
+
+export interface Claim {
+  id: string
+  projectId: string
+  text: string
+  annotationIds: string[]
+  sourceIds: string[]
+  status: ClaimStatus
+  createdAt: string
+  updatedAt: string
+}
+
+export interface DraftPassage {
+  id: string
+  projectId: string
+  title?: string
+  text: string
+  claimIds: string[]
+  sourceIds: string[]
+  citationText?: string
+  editorContent?: JSONContent
+  createdAt: string
+  updatedAt: string
+}
+
+export type ExportFormat = 'markdown' | 'html'
+
+export interface ExportRecord {
+  id: string
+  projectId: string
+  draftPassageId: string
+  format: ExportFormat
+  content: string
+  includedBibliography: boolean
+  createdAt: string
+}
 
 export interface Source {
   id: string
@@ -32,6 +123,33 @@ export interface Source {
   pages?: string
   doi?: string
   createdAt: string
+  updatedAt?: string
+}
+
+export type CreateResearchItemInput = Omit<ResearchItem, 'id' | 'projectId' | 'createdAt' | 'updatedAt'>
+export type CreateAnnotationInput = Omit<Annotation, 'id' | 'projectId' | 'createdAt' | 'updatedAt' | 'tags'> & {
+  tags?: string[]
+}
+export type CreateClaimInput = Omit<Claim, 'id' | 'projectId' | 'createdAt' | 'updatedAt' | 'sourceIds' | 'status'> & {
+  sourceIds?: string[]
+  status?: ClaimStatus
+}
+export type CreateDraftPassageInput = Omit<DraftPassage, 'id' | 'projectId' | 'createdAt' | 'updatedAt'>
+export type CreateExportRecordInput = Omit<ExportRecord, 'id' | 'projectId' | 'createdAt'>
+
+const WORKFLOW_STEPS: WorkflowStep[] = [
+  'project',
+  'research-item',
+  'annotation',
+  'claim',
+  'draft',
+  'review',
+  'export',
+]
+
+const DEFAULT_WORKFLOW_STATE: ProjectWorkflowState = {
+  currentStep: 'project',
+  completedSteps: [],
 }
 
 export interface StoredImage {
@@ -81,6 +199,152 @@ function isStoredImage(value: unknown): value is StoredImage {
   )
 }
 
+function isSource(value: unknown): value is Source {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'type' in value &&
+    'title' in value &&
+    'author' in value &&
+    'year' in value &&
+    'createdAt' in value
+  )
+}
+
+function isWorkflowStep(value: unknown): value is WorkflowStep {
+  return typeof value === 'string' && WORKFLOW_STEPS.includes(value as WorkflowStep)
+}
+
+function normalizeWorkflowState(value: unknown): ProjectWorkflowState {
+  if (typeof value !== 'object' || value === null) {
+    return { ...DEFAULT_WORKFLOW_STATE }
+  }
+
+  const record = value as Record<string, unknown>
+  const completedSteps = Array.isArray(record.completedSteps)
+    ? record.completedSteps.filter(isWorkflowStep)
+    : []
+
+  return {
+    currentStep: isWorkflowStep(record.currentStep) ? record.currentStep : DEFAULT_WORKFLOW_STATE.currentStep,
+    completedSteps,
+    activeResearchItemId: typeof record.activeResearchItemId === 'string' ? record.activeResearchItemId : undefined,
+    activeAnnotationId: typeof record.activeAnnotationId === 'string' ? record.activeAnnotationId : undefined,
+    activeClaimId: typeof record.activeClaimId === 'string' ? record.activeClaimId : undefined,
+    activeDraftPassageId: typeof record.activeDraftPassageId === 'string' ? record.activeDraftPassageId : undefined,
+  }
+}
+
+function isResearchItem(value: unknown): value is ResearchItem {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'projectId' in value &&
+    'kind' in value &&
+    'title' in value &&
+    'createdAt' in value &&
+    'updatedAt' in value
+  )
+}
+
+function isAnnotation(value: unknown): value is Annotation {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'projectId' in value &&
+    'researchItemId' in value &&
+    'note' in value &&
+    'createdAt' in value &&
+    'updatedAt' in value
+  )
+}
+
+function normalizeAnnotation(value: Annotation): Annotation {
+  return {
+    ...value,
+    tags: Array.isArray(value.tags) ? value.tags.filter((tag): tag is string => typeof tag === 'string') : [],
+  }
+}
+
+function isClaim(value: unknown): value is Claim {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'projectId' in value &&
+    'text' in value &&
+    'annotationIds' in value &&
+    'sourceIds' in value &&
+    'status' in value &&
+    'createdAt' in value &&
+    'updatedAt' in value
+  )
+}
+
+function normalizeClaim(value: Claim): Claim {
+  return {
+    ...value,
+    annotationIds: Array.isArray(value.annotationIds)
+      ? value.annotationIds.filter((id): id is string => typeof id === 'string')
+      : [],
+    sourceIds: Array.isArray(value.sourceIds)
+      ? value.sourceIds.filter((id): id is string => typeof id === 'string')
+      : [],
+    status: ['draft', 'ready', 'used'].includes(value.status) ? value.status : 'draft',
+  }
+}
+
+function isDraftPassage(value: unknown): value is DraftPassage {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'projectId' in value &&
+    'text' in value &&
+    'claimIds' in value &&
+    'sourceIds' in value &&
+    'createdAt' in value &&
+    'updatedAt' in value
+  )
+}
+
+function normalizeDraftPassage(value: DraftPassage): DraftPassage {
+  return {
+    ...value,
+    claimIds: Array.isArray(value.claimIds)
+      ? value.claimIds.filter((id): id is string => typeof id === 'string')
+      : [],
+    sourceIds: Array.isArray(value.sourceIds)
+      ? value.sourceIds.filter((id): id is string => typeof id === 'string')
+      : [],
+  }
+}
+
+function isExportRecord(value: unknown): value is ExportRecord {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'projectId' in value &&
+    'draftPassageId' in value &&
+    'format' in value &&
+    'content' in value &&
+    'includedBibliography' in value &&
+    'createdAt' in value
+  )
+}
+
+function normalizeExportRecord(value: ExportRecord): ExportRecord {
+  return {
+    ...value,
+    format: value.format === 'html' ? 'html' : 'markdown',
+    includedBibliography: Boolean(value.includedBibliography),
+  }
+}
+
 function normalizeStoredImage(value: StoredImage): StoredImage {
   return {
     ...value,
@@ -88,7 +352,7 @@ function normalizeStoredImage(value: StoredImage): StoredImage {
   }
 }
 
-function isProject(value: unknown): value is Project {
+function isProjectLike(value: unknown): value is Record<string, unknown> {
   return (
     typeof value === 'object' &&
     value !== null &&
@@ -96,9 +360,53 @@ function isProject(value: unknown): value is Project {
     'title' in value &&
     'content' in value &&
     'createdAt' in value &&
-    'updatedAt' in value &&
-    'wordCount' in value
+    'updatedAt' in value
   )
+}
+
+export function createDefaultWorkflowState(): ProjectWorkflowState {
+  return { ...DEFAULT_WORKFLOW_STATE, completedSteps: [...DEFAULT_WORKFLOW_STATE.completedSteps] }
+}
+
+export function normalizeProject(value: unknown): Project | null {
+  if (!isProjectLike(value)) {
+    return null
+  }
+
+  const content = isJsonContent(value.content) ? value.content : createDefaultDocument()
+  const citationStyle = isCitationStyle(value.citationStyle) ? value.citationStyle : 'mla'
+
+  return {
+    id: String(value.id),
+    title: normalizeProjectTitle(String(value.title)),
+    content,
+    createdAt: String(value.createdAt),
+    updatedAt: String(value.updatedAt),
+    wordCount: typeof value.wordCount === 'number' ? value.wordCount : countWords(content),
+    citationStyle,
+    sources: Array.isArray(value.sources) ? value.sources.filter(isSource) : [],
+    researchItems: Array.isArray(value.researchItems) ? value.researchItems.filter(isResearchItem) : [],
+    annotations: Array.isArray(value.annotations)
+      ? value.annotations.filter(isAnnotation).map(normalizeAnnotation)
+      : [],
+    claims: Array.isArray(value.claims) ? value.claims.filter(isClaim).map(normalizeClaim) : [],
+    draftPassages: Array.isArray(value.draftPassages)
+      ? value.draftPassages.filter(isDraftPassage).map(normalizeDraftPassage)
+      : [],
+    exports: Array.isArray(value.exports) ? value.exports.filter(isExportRecord).map(normalizeExportRecord) : [],
+    workflowState: normalizeWorkflowState(value.workflowState),
+  }
+}
+
+function isCitationStyle(value: unknown): value is CitationStyle {
+  return value === 'mla' || value === 'apa' || value === 'chicago' || value === 'harvard'
+}
+
+function withCompletedSteps(workflowState: ProjectWorkflowState, steps: WorkflowStep[]): ProjectWorkflowState {
+  return {
+    ...workflowState,
+    completedSteps: Array.from(new Set([...workflowState.completedSteps, ...steps])),
+  }
 }
 
 export function loadImages(): StoredImage[] {
@@ -390,7 +698,15 @@ export function loadProjects(): Project[] {
       return []
     }
 
-    return parsed.filter(isProject)
+    const projects = parsed
+      .map(normalizeProject)
+      .filter((project): project is Project => project !== null)
+
+    if (JSON.stringify(parsed) !== JSON.stringify(projects)) {
+      saveProjects(projects)
+    }
+
+    return projects
   } catch {
     return []
   }
@@ -418,6 +734,232 @@ export function saveProject(project: Project): void {
   saveProjects(projects)
 }
 
+export function createResearchItem(
+  projectId: string,
+  input: CreateResearchItemInput,
+): ResearchItem | null {
+  const project = loadProject(projectId)
+  if (!project) return null
+
+  const now = new Date().toISOString()
+  const researchItem: ResearchItem = {
+    ...input,
+    id: crypto.randomUUID(),
+    projectId,
+    title: normalizeProjectTitle(input.title),
+    createdAt: now,
+    updatedAt: now,
+  }
+
+  const updatedProject: Project = {
+    ...project,
+    researchItems: [...project.researchItems, researchItem],
+    updatedAt: now,
+    workflowState: {
+      ...withCompletedSteps(project.workflowState, ['project', 'research-item']),
+      currentStep: 'annotation',
+      activeResearchItemId: researchItem.id,
+    },
+  }
+
+  saveProject(updatedProject)
+  return researchItem
+}
+
+export function updateResearchItem(
+  projectId: string,
+  researchItemId: string,
+  updates: Partial<Omit<ResearchItem, 'id' | 'projectId' | 'createdAt'>>,
+): ResearchItem | null {
+  const project = loadProject(projectId)
+  if (!project) return null
+
+  const existingResearchItem = project.researchItems.find(item => item.id === researchItemId)
+  if (!existingResearchItem) return null
+
+  const now = new Date().toISOString()
+  const updatedResearchItem: ResearchItem = {
+    ...existingResearchItem,
+    ...updates,
+    title: typeof updates.title === 'string' ? normalizeProjectTitle(updates.title) : existingResearchItem.title,
+    updatedAt: now,
+  }
+
+  saveProject({
+    ...project,
+    researchItems: project.researchItems.map(item =>
+      item.id === researchItemId ? updatedResearchItem : item,
+    ),
+    updatedAt: now,
+  })
+
+  return updatedResearchItem
+}
+
+export function createAnnotation(
+  projectId: string,
+  input: CreateAnnotationInput,
+): Annotation | null {
+  const project = loadProject(projectId)
+  if (!project) return null
+
+  const researchItem = project.researchItems.find(item => item.id === input.researchItemId)
+  if (!researchItem) return null
+
+  const now = new Date().toISOString()
+  const annotation: Annotation = {
+    ...input,
+    id: crypto.randomUUID(),
+    projectId,
+    sourceId: input.sourceId ?? researchItem.sourceId,
+    imageId: input.imageId ?? researchItem.imageId,
+    note: input.note.trim(),
+    tags: input.tags ?? [],
+    createdAt: now,
+    updatedAt: now,
+  }
+
+  const updatedProject: Project = {
+    ...project,
+    annotations: [...project.annotations, annotation],
+    updatedAt: now,
+    workflowState: {
+      ...withCompletedSteps(project.workflowState, ['project', 'research-item', 'annotation']),
+      currentStep: 'claim',
+      activeResearchItemId: researchItem.id,
+      activeAnnotationId: annotation.id,
+    },
+  }
+
+  saveProject(updatedProject)
+  return annotation
+}
+
+export function createClaim(
+  projectId: string,
+  input: CreateClaimInput,
+): Claim | null {
+  const project = loadProject(projectId)
+  if (!project) return null
+
+  const linkedAnnotations = project.annotations.filter(annotation =>
+    input.annotationIds.includes(annotation.id),
+  )
+
+  if (linkedAnnotations.length === 0) return null
+
+  const inferredSourceIds = linkedAnnotations
+    .map(annotation => annotation.sourceId)
+    .filter((sourceId): sourceId is string => typeof sourceId === 'string')
+  const sourceIds = input.sourceIds ?? Array.from(new Set(inferredSourceIds))
+  const now = new Date().toISOString()
+  const claim: Claim = {
+    ...input,
+    id: crypto.randomUUID(),
+    projectId,
+    text: input.text.trim(),
+    sourceIds,
+    status: input.status ?? 'draft',
+    createdAt: now,
+    updatedAt: now,
+  }
+
+  const updatedProject: Project = {
+    ...project,
+    claims: [...project.claims, claim],
+    updatedAt: now,
+    workflowState: {
+      ...withCompletedSteps(project.workflowState, ['project', 'research-item', 'annotation', 'claim']),
+      currentStep: 'draft',
+      activeAnnotationId: claim.annotationIds[0],
+      activeClaimId: claim.id,
+    },
+  }
+
+  saveProject(updatedProject)
+  return claim
+}
+
+export function createDraftPassage(
+  projectId: string,
+  input: CreateDraftPassageInput,
+): DraftPassage | null {
+  const project = loadProject(projectId)
+  if (!project) return null
+
+  const linkedClaims = project.claims.filter(claim => input.claimIds.includes(claim.id))
+  if (linkedClaims.length === 0) return null
+
+  const inferredSourceIds = linkedClaims.flatMap(claim => claim.sourceIds)
+  const sourceIds = input.sourceIds.length > 0 ? input.sourceIds : Array.from(new Set(inferredSourceIds))
+  const now = new Date().toISOString()
+  const draftPassage: DraftPassage = {
+    ...input,
+    id: crypto.randomUUID(),
+    projectId,
+    text: input.text.trim(),
+    sourceIds,
+    createdAt: now,
+    updatedAt: now,
+  }
+
+  const updatedProject: Project = {
+    ...project,
+    draftPassages: [...project.draftPassages, draftPassage],
+    updatedAt: now,
+    workflowState: {
+      ...withCompletedSteps(project.workflowState, ['project', 'research-item', 'annotation', 'claim', 'draft']),
+      currentStep: 'review',
+      activeClaimId: draftPassage.claimIds[0],
+      activeDraftPassageId: draftPassage.id,
+    },
+  }
+
+  saveProject(updatedProject)
+  return draftPassage
+}
+
+export function createExportRecord(
+  projectId: string,
+  input: CreateExportRecordInput,
+): ExportRecord | null {
+  const project = loadProject(projectId)
+  if (!project) return null
+
+  const draftPassage = project.draftPassages.find(passage => passage.id === input.draftPassageId)
+  if (!draftPassage) return null
+
+  const now = new Date().toISOString()
+  const exportRecord: ExportRecord = {
+    ...input,
+    id: crypto.randomUUID(),
+    projectId,
+    createdAt: now,
+  }
+
+  const updatedProject: Project = {
+    ...project,
+    exports: [...project.exports, exportRecord],
+    updatedAt: now,
+    workflowState: {
+      ...withCompletedSteps(project.workflowState, [
+        'project',
+        'research-item',
+        'annotation',
+        'claim',
+        'draft',
+        'review',
+        'export',
+      ]),
+      currentStep: 'export',
+      activeDraftPassageId: draftPassage.id,
+    },
+  }
+
+  saveProject(updatedProject)
+  return exportRecord
+}
+
 export function deleteProject(id: string): void {
   const projects = loadProjects()
   const filtered = projects.filter(project => project.id !== id)
@@ -438,6 +980,12 @@ export function createProject(title?: string, citationStyle: CitationStyle = 'ml
     wordCount: countWords(content),
     citationStyle,
     sources: [],
+    researchItems: [],
+    annotations: [],
+    claims: [],
+    draftPassages: [],
+    exports: [],
+    workflowState: createDefaultWorkflowState(),
   }
 }
 
