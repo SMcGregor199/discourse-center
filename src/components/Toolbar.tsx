@@ -64,8 +64,8 @@ export function Toolbar({ editor, onBackToDashboard, onOpenImageBrowser, onOpenC
         )}
         {onOpenAIResearch && (
           <ToolbarButton
-            label='🔍 AI'
-            ariaLabel='AI research assistant'
+            label='🔍 Mock AI'
+            ariaLabel='Mock AI research assistant with demo results'
             onClick={onOpenAIResearch}
           />
         )}
@@ -102,8 +102,8 @@ export function Toolbar({ editor, onBackToDashboard, onOpenImageBrowser, onOpenC
       )}
       {onOpenAIResearch && (
         <ToolbarButton
-          label='🔍 AI'
-          ariaLabel='AI research assistant'
+          label='🔍 Mock AI'
+          ariaLabel='Mock AI research assistant with demo results'
           onClick={onOpenAIResearch}
         />
       )}

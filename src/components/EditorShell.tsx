@@ -172,10 +172,6 @@ export function EditorShell() {
   }, [title])
 
   useEffect(() => {
-    setTitle(normalizeProjectTitle(project?.title))
-  }, [project?.id, project?.title])
-
-  useEffect(() => {
     return () => {
       if (saveTimeoutRef.current) {
         window.clearTimeout(saveTimeoutRef.current)

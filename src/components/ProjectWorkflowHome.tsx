@@ -70,19 +70,33 @@ function getNextStep(project: Project) {
   const hasAnnotations = project.annotations.length > 0
   const hasClaims = project.claims.length > 0
   const hasDraftPassages = project.draftPassages.length > 0
+  const hasExports = project.exports.length > 0
+  const isReviewComplete = project.workflowState.completedSteps.includes('review')
 
   switch (currentStep) {
     case 'project':
     case 'research-item':
+      if (hasExports) {
+        return {
+          title: 'Workflow complete',
+          description:
+            'The project has a saved evidence-to-prose chain and a local Markdown export record.',
+          primaryHref: `/projects/${project.id}/export`,
+          primaryLabel: 'View export',
+          secondaryHref: `/projects/${project.id}/review`,
+          secondaryLabel: 'Review provenance',
+        }
+      }
+
       if (hasDraftPassages) {
         return {
           title: 'Next: review provenance',
           description:
-            'Review and export arrive in the next phase. The saved draft passage is ready for provenance review.',
-          primaryHref: `/editor/${project.id}`,
-          primaryLabel: 'Open editor',
-          secondaryHref: `/projects/${project.id}/drafts/new`,
-          secondaryLabel: 'Add another draft',
+            'Check the saved draft passage against its source, annotation, and claim before export.',
+          primaryHref: `/projects/${project.id}/review`,
+          primaryLabel: 'Review provenance',
+          secondaryHref: `/projects/${project.id}/export`,
+          secondaryLabel: 'Go to export',
         }
       }
 
@@ -176,13 +190,37 @@ function getNextStep(project: Project) {
         secondaryLabel: 'Add another annotation',
       }
     case 'draft':
+      if (hasExports) {
+        return {
+          title: 'Workflow complete',
+          description:
+            'The project has a saved evidence-to-prose chain and a local Markdown export record.',
+          primaryHref: `/projects/${project.id}/export`,
+          primaryLabel: 'View export',
+          secondaryHref: `/projects/${project.id}/review`,
+          secondaryLabel: 'Review provenance',
+        }
+      }
+
+      if (isReviewComplete) {
+        return {
+          title: 'Next: export cited prose',
+          description:
+            'The provenance chain has been reviewed. Copy the cited passage as Markdown and save the export record.',
+          primaryHref: `/projects/${project.id}/export`,
+          primaryLabel: 'Export Markdown',
+          secondaryHref: `/projects/${project.id}/review`,
+          secondaryLabel: 'Review provenance',
+        }
+      }
+
       if (hasDraftPassages) {
         return {
           title: 'Next: review provenance',
           description:
-            'Review and export arrive in the next phase. The saved draft passage is ready for provenance review.',
-          primaryHref: `/editor/${project.id}`,
-          primaryLabel: 'Open editor',
+            'Check the saved draft passage against its source, annotation, and claim before export.',
+          primaryHref: `/projects/${project.id}/review`,
+          primaryLabel: 'Review provenance',
           secondaryHref: `/projects/${project.id}/drafts/new`,
           secondaryLabel: 'Add another draft',
         }
@@ -198,24 +236,60 @@ function getNextStep(project: Project) {
         secondaryLabel: 'Add another claim',
       }
     case 'review':
+      if (hasExports) {
+        return {
+          title: 'Workflow complete',
+          description:
+            'The project has a saved evidence-to-prose chain and a local Markdown export record.',
+          primaryHref: `/projects/${project.id}/export`,
+          primaryLabel: 'View export',
+          secondaryHref: `/projects/${project.id}/review`,
+          secondaryLabel: 'Review provenance',
+        }
+      }
+
+      if (isReviewComplete) {
+        return {
+          title: 'Next: export cited prose',
+          description:
+            'The provenance chain has been reviewed. Copy the cited passage as Markdown and save the export record.',
+          primaryHref: `/projects/${project.id}/export`,
+          primaryLabel: 'Export Markdown',
+          secondaryHref: `/projects/${project.id}/review`,
+          secondaryLabel: 'Review provenance',
+        }
+      }
+
       return {
         title: 'Next: review provenance',
         description:
-          'The review screen is not implemented in Phase 4. For now, keep sources and draft text visible through existing surfaces.',
-        primaryHref: `/editor/${project.id}`,
-        primaryLabel: 'Open editor',
+          'Check the saved draft passage against its source, annotation, and claim before export.',
+        primaryHref: `/projects/${project.id}/review`,
+        primaryLabel: 'Review provenance',
         secondaryHref: `/projects/${project.id}/drafts/new`,
         secondaryLabel: 'Add another draft',
       }
     case 'export':
+      if (hasExports) {
+        return {
+          title: 'Workflow complete',
+          description:
+            'The project has a saved evidence-to-prose chain and a local Markdown export record.',
+          primaryHref: `/projects/${project.id}/export`,
+          primaryLabel: 'View export',
+          secondaryHref: `/projects/${project.id}/review`,
+          secondaryLabel: 'Review provenance',
+        }
+      }
+
       return {
         title: 'Next: export cited prose',
         description:
-          'Dedicated export arrives later. Existing editor copy actions remain available through the editor route.',
-        primaryHref: `/editor/${project.id}`,
-        primaryLabel: 'Open editor',
-        secondaryHref: '/citations',
-        secondaryLabel: 'Review citations',
+          'Copy the cited passage as Markdown and save a local export record.',
+        primaryHref: `/projects/${project.id}/export`,
+        primaryLabel: 'Export Markdown',
+        secondaryHref: `/projects/${project.id}/review`,
+        secondaryLabel: 'Review provenance',
       }
   }
 }
@@ -234,7 +308,7 @@ function WorkflowProgress({ project }: { project: Project }) {
         {WORKFLOW_STEPS.map((step, index) => {
           const isCurrent = step.id === currentStep
           const isComplete = completedSteps.includes(step.id)
-          const statusLabel = isCurrent ? 'Current' : isComplete ? 'Complete' : 'Not started'
+          const statusLabel = isComplete ? 'Complete' : isCurrent ? 'Current' : 'Not started'
 
           return (
             <li

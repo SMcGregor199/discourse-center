@@ -960,6 +960,35 @@ export function createExportRecord(
   return exportRecord
 }
 
+export function completeReview(projectId: string, draftPassageId: string): Project | null {
+  const project = loadProject(projectId)
+  if (!project) return null
+
+  const draftPassage = project.draftPassages.find(passage => passage.id === draftPassageId)
+  if (!draftPassage) return null
+
+  const now = new Date().toISOString()
+  const updatedProject: Project = {
+    ...project,
+    updatedAt: now,
+    workflowState: {
+      ...withCompletedSteps(project.workflowState, [
+        'project',
+        'research-item',
+        'annotation',
+        'claim',
+        'draft',
+        'review',
+      ]),
+      currentStep: 'export',
+      activeDraftPassageId: draftPassage.id,
+    },
+  }
+
+  saveProject(updatedProject)
+  return updatedProject
+}
+
 export function deleteProject(id: string): void {
   const projects = loadProjects()
   const filtered = projects.filter(project => project.id !== id)

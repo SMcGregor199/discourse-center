@@ -693,6 +693,65 @@ html, body {
   text-align: right;
 }
 
+.provenance-chain {
+  align-content: start;
+}
+
+.provenance-alert {
+  border: 1px solid #fed7aa;
+  border-radius: 14px;
+  background: #fff7ed;
+  color: #9a3412;
+  padding: 1rem;
+}
+
+.provenance-alert h3 {
+  margin: 0 0 0.5rem;
+  color: #9a3412;
+}
+
+.provenance-alert ul,
+.provenance-list {
+  margin: 0;
+}
+
+.provenance-list {
+  display: grid;
+  gap: 1rem;
+  padding-left: 1.25rem;
+}
+
+.provenance-list li {
+  border: 1px solid #edf2f7;
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 1rem;
+}
+
+.provenance-list h3 {
+  margin: 0 0 0.5rem;
+  color: #172033;
+  font-size: 1rem;
+}
+
+.provenance-list p {
+  margin: 0.45rem 0;
+}
+
+.markdown-preview {
+  min-height: 220px;
+  max-height: 460px;
+  overflow: auto;
+  white-space: pre-wrap;
+  border: 1px solid #d6dfeb;
+  border-radius: 14px;
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 1rem;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  line-height: 1.6;
+}
+
 /* Image Repository Styles */
 .image-repository {
   min-height: 100vh;
@@ -1732,7 +1791,8 @@ html, body {
 .ai-research-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  gap: 1rem;
   padding: 1.5rem 2rem;
   border-bottom: 1px solid #e5e7eb;
 }

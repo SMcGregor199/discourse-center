@@ -1,12 +1,13 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, test, expect } from 'vitest'
+import { beforeEach, test, expect, vi } from 'vitest'
 import App from '../src/App'
 import {
   PROJECTS_STORAGE_KEY,
   createAnnotation,
   createClaim,
   createDraftPassage,
+  createExportRecord,
   createProject,
   createResearchItem,
   loadProject,
@@ -62,6 +63,39 @@ function createAnnotatedProject(title = 'Annotated Project') {
     source,
     researchItem,
     annotation,
+  }
+}
+
+function createDraftedProject(title = 'Drafted Project') {
+  const { project, annotation, source, researchItem } = createAnnotatedProject(title)
+  const claim = createClaim(project.id, {
+    annotationIds: [annotation.id],
+    text: 'Archival method is interpretive.',
+  })
+
+  if (!claim) {
+    throw new Error('Could not create test claim')
+  }
+
+  const draftPassage = createDraftPassage(project.id, {
+    title: 'Interpretive method paragraph',
+    text: 'Archival method should be understood as interpretive practice grounded in situated evidence.',
+    claimIds: [claim.id],
+    sourceIds: [source.id],
+    citationText: '(Smith 2023)',
+  })
+
+  if (!draftPassage) {
+    throw new Error('Could not create test draft passage')
+  }
+
+  return {
+    project: loadProject(project.id) ?? project,
+    source,
+    researchItem,
+    annotation,
+    claim,
+    draftPassage,
   }
 }
 
@@ -177,6 +211,8 @@ test('updates a project title from inside the editor', async () => {
   window.history.pushState({}, '', `/editor/${project.id}`)
 
   render(<App />)
+
+  expect(screen.getByRole('button', { name: /mock ai research assistant/i })).toBeInTheDocument()
 
   const titleInput = screen.getByRole('textbox', { name: /document title/i })
   await user.clear(titleInput)
@@ -463,6 +499,175 @@ test('workflow home next-step guidance moves from claim to draft to review', () 
   expect(reviewStep).not.toBeNull()
   expect(within(draftStep as HTMLElement).getByText(/complete/i)).toBeInTheDocument()
   expect(within(reviewStep as HTMLElement).getByText(/current/i)).toBeInTheDocument()
+})
+
+test('review provenance screen renders a complete chain', () => {
+  const { project } = createDraftedProject('Review Render Project')
+  window.history.pushState({}, '', `/projects/${project.id}/review`)
+
+  render(<App />)
+
+  expect(screen.getByRole('heading', { name: /review provenance/i })).toBeInTheDocument()
+  expect(screen.getByText(/complete chain/i)).toBeInTheDocument()
+  expect(screen.getByText(/interpretive method paragraph/i)).toBeInTheDocument()
+  expect(screen.getByText(/archival method is interpretive/i)).toBeInTheDocument()
+  expect(screen.getByText(/method as an interpretive practice/i)).toBeInTheDocument()
+  expect(screen.getByText(/archive memo/i)).toBeInTheDocument()
+  expect(screen.getByText(/Archival Method \(2023\)/i)).toBeInTheDocument()
+  expect(screen.getByText(/\(Smith 2023\)/i)).toBeInTheDocument()
+})
+
+test('review provenance screen handles missing chain data gracefully', () => {
+  const project = createProject('Missing Review Project')
+  saveProject(project)
+  window.history.pushState({}, '', `/projects/${project.id}/review`)
+
+  render(<App />)
+
+  expect(screen.getByRole('heading', { name: /review provenance/i })).toBeInTheDocument()
+  expect(screen.getByText(/needs attention/i)).toBeInTheDocument()
+  expect(screen.getByText(/draft passage is missing/i)).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: /add a draft passage/i })).toHaveAttribute(
+    'href',
+    `/projects/${project.id}/drafts/new`,
+  )
+})
+
+test('export screen renders Markdown for a project with a draft passage', () => {
+  const { project } = createDraftedProject('Export Render Project')
+  window.history.pushState({}, '', `/projects/${project.id}/export`)
+
+  render(<App />)
+
+  expect(screen.getByRole('heading', { name: /export cited passage/i })).toBeInTheDocument()
+  expect(screen.getByLabelText(/markdown export preview/i)).toHaveTextContent(
+    /archival method should be understood as interpretive practice/i,
+  )
+  expect(screen.getByLabelText(/markdown export preview/i)).toHaveTextContent(/\(Smith 2023\)/)
+  expect(screen.getByLabelText(/markdown export preview/i)).toHaveTextContent(/Reference:/)
+  expect(screen.getByLabelText(/markdown export preview/i)).toHaveTextContent(/Jordan Smith/)
+})
+
+test('copies Markdown export and persists an export record locally', async () => {
+  const user = userEvent.setup()
+  const writeText = vi.fn().mockResolvedValue(undefined)
+  Object.defineProperty(navigator, 'clipboard', {
+    value: { writeText },
+    configurable: true,
+  })
+  const { project, draftPassage } = createDraftedProject('Export Persistence Project')
+  window.history.pushState({}, '', `/projects/${project.id}/export`)
+
+  render(<App />)
+
+  await user.click(screen.getByRole('button', { name: /copy markdown and save export/i }))
+
+  expect(await screen.findByRole('status')).toHaveTextContent(/markdown copied and export record saved/i)
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('Reference:'))
+
+  const updatedProject = loadProject(project.id)
+  expect(updatedProject?.exports).toHaveLength(1)
+  expect(updatedProject?.exports[0]).toMatchObject({
+    draftPassageId: draftPassage.id,
+    format: 'markdown',
+    includedBibliography: true,
+  })
+  expect(updatedProject?.exports[0].content).toContain('Archival method should be understood')
+  expect(updatedProject?.exports[0].content).toContain('Reference:')
+  expect(updatedProject?.workflowState.currentStep).toBe('export')
+  expect(updatedProject?.workflowState.completedSteps).toEqual(
+    expect.arrayContaining(['project', 'research-item', 'annotation', 'claim', 'draft', 'review', 'export']),
+  )
+})
+
+test('export screen announces clipboard failures as errors', async () => {
+  const user = userEvent.setup()
+  Object.defineProperty(navigator, 'clipboard', {
+    value: { writeText: vi.fn().mockRejectedValue(new Error('clipboard blocked')) },
+    configurable: true,
+  })
+  const { project } = createDraftedProject('Export Failure Project')
+  window.history.pushState({}, '', `/projects/${project.id}/export`)
+
+  render(<App />)
+
+  await user.click(screen.getByRole('button', { name: /copy markdown and save export/i }))
+
+  const status = await screen.findByRole('status')
+  expect(status).toHaveTextContent(/could not copy markdown/i)
+  expect(status).toHaveClass('form-error')
+  expect(loadProject(project.id)?.exports).toHaveLength(0)
+})
+
+test('workflow home next-step guidance moves from review to export to complete', async () => {
+  const user = userEvent.setup()
+  const writeText = vi.fn().mockResolvedValue(undefined)
+  Object.defineProperty(navigator, 'clipboard', {
+    value: { writeText },
+    configurable: true,
+  })
+  const { project } = createDraftedProject('Phase Five Guidance Project')
+  window.history.pushState({}, '', `/projects/${project.id}`)
+
+  const firstRender = render(<App />)
+
+  expect(screen.getByText(/next: review provenance/i)).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: /review provenance/i })).toHaveAttribute(
+    'href',
+    `/projects/${project.id}/review`,
+  )
+
+  firstRender.unmount()
+  window.history.pushState({}, '', `/projects/${project.id}/review`)
+  const reviewRender = render(<App />)
+  await user.click(screen.getByRole('button', { name: /mark review complete/i }))
+  expect(await screen.findByRole('status')).toHaveTextContent(/review complete/i)
+
+  reviewRender.unmount()
+  window.history.pushState({}, '', `/projects/${project.id}`)
+  const exportGuidanceRender = render(<App />)
+  expect(screen.getByText(/next: export cited prose/i)).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: /export markdown/i })).toHaveAttribute(
+    'href',
+    `/projects/${project.id}/export`,
+  )
+
+  exportGuidanceRender.unmount()
+  window.history.pushState({}, '', `/projects/${project.id}/export`)
+  const exportRender = render(<App />)
+  await user.click(screen.getByRole('button', { name: /copy markdown and save export/i }))
+  expect(await screen.findByRole('status')).toHaveTextContent(/markdown copied and export record saved/i)
+
+  exportRender.unmount()
+  window.history.pushState({}, '', `/projects/${project.id}`)
+  render(<App />)
+  expect(screen.getByText(/workflow complete/i)).toBeInTheDocument()
+  expect(screen.getByText('Exports').nextElementSibling).toHaveTextContent('1')
+
+  const workflowProgress = screen.getByRole('heading', { name: 'Workflow progress' }).closest('section')
+  expect(workflowProgress).not.toBeNull()
+  const reviewStep = within(workflowProgress as HTMLElement).getByText('Review').closest('li')
+  const exportStep = within(workflowProgress as HTMLElement).getByText('Export').closest('li')
+  expect(reviewStep).not.toBeNull()
+  expect(exportStep).not.toBeNull()
+  expect(within(reviewStep as HTMLElement).getByText(/complete/i)).toBeInTheDocument()
+  expect(within(exportStep as HTMLElement).getByText(/complete/i)).toBeInTheDocument()
+})
+
+test('workflow home shows complete when an export already exists', () => {
+  const { project, draftPassage } = createDraftedProject('Existing Export Project')
+  createExportRecord(project.id, {
+    draftPassageId: draftPassage.id,
+    format: 'markdown',
+    content: 'Existing export',
+    includedBibliography: false,
+  })
+  window.history.pushState({}, '', `/projects/${project.id}`)
+
+  render(<App />)
+
+  expect(screen.getByText(/workflow complete/i)).toBeInTheDocument()
+  expect(screen.getByText('Exports').nextElementSibling).toHaveTextContent('1')
 })
 
 test('old normalized projects can open claim and draft screens', () => {

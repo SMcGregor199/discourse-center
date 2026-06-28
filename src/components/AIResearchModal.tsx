@@ -53,7 +53,7 @@ export function AIResearchModal({ selectedText, currentProject, onInsert, onClos
     setResults([])
 
     try {
-      // Mock search for now - will replace with real Semantic Scholar/Crossref API
+      // Demo-only mock search. No live scholarly search runs in the MVP.
       await new Promise(resolve => setTimeout(resolve, 1500))
       
       const mockResults = [
@@ -125,7 +125,10 @@ export function AIResearchModal({ selectedText, currentProject, onInsert, onClos
     <div className="ai-research-overlay">
       <div className="ai-research-modal">
         <div className="ai-research-header">
-          <h2>AI Research Assistant</h2>
+          <div>
+            <h2>Mock AI Research Assistant</h2>
+            <p className="form-help">Demo-only suggestions. No live scholarly search or source verification is performed.</p>
+          </div>
           <button className="close-btn" onClick={onClose}>
             ×
           </button>
@@ -212,13 +215,13 @@ export function AIResearchModal({ selectedText, currentProject, onInsert, onClos
               onClick={handleSearch}
               disabled={isSearching}
             >
-              {isSearching ? 'Searching...' : '🔍 Search Scholarly Sources'}
+              {isSearching ? 'Searching mock sources...' : '🔍 Search mock scholarly sources'}
             </button>
           </div>
 
           {results.length > 0 && (
             <div className="results-section">
-              <h3>Research Results</h3>
+              <h3>Mock research results</h3>
               <div className="results-list">
                 {results.map((result, i) => (
                   <div key={i} className="result-item">
