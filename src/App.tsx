@@ -4,6 +4,8 @@ import { EditorShell } from './components/EditorShell'
 import { ImageRepository } from './components/ImageRepository'
 import { CitationsLibrary } from './components/CitationsLibrary'
 import { ProjectWorkflowHome } from './components/ProjectWorkflowHome'
+import { ResearchItemIntake } from './components/ResearchItemIntake'
+import { AnnotationPanel } from './components/AnnotationPanel'
 import './App.css'
 
 function AppLayout() {
@@ -15,6 +17,8 @@ function AppLayout() {
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/projects/:projectId" element={<ProjectWorkflowHome />} />
+        <Route path="/projects/:projectId/research-items/new" element={<ResearchItemIntake />} />
+        <Route path="/projects/:projectId/annotations/new" element={<AnnotationPanel />} />
         <Route path="/editor/:projectId" element={<EditorShell />} />
         <Route path="/images" element={<ImageRepository />} />
         <Route path="/citations" element={<CitationsLibrary />} />

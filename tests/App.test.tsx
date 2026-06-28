@@ -2,7 +2,14 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, test, expect } from 'vitest'
 import App from '../src/App'
-import { PROJECTS_STORAGE_KEY, createProject, loadProject, saveProject } from '../src/lib/storage'
+import {
+  PROJECTS_STORAGE_KEY,
+  createAnnotation,
+  createProject,
+  createResearchItem,
+  loadProject,
+  saveProject,
+} from '../src/lib/storage'
 
 beforeEach(() => {
   localStorage.clear()
@@ -129,6 +136,181 @@ test('updates a project title from inside the editor', async () => {
   await waitFor(() => {
     expect(loadProject(project.id)?.title).toBe('Editor Renamed Title')
   })
+})
+
+test('renders research item intake for a project', () => {
+  const project = createProject('Research Intake Project')
+  saveProject(project)
+  window.history.pushState({}, '', `/projects/${project.id}/research-items/new`)
+
+  render(<App />)
+
+  expect(screen.getByRole('heading', { name: /add a research item/i })).toBeInTheDocument()
+  expect(screen.getByLabelText(/title/i)).toBeInTheDocument()
+  expect(screen.getByLabelText(/kind/i)).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: /go to annotations/i })).toHaveAttribute(
+    'href',
+    `/projects/${project.id}/annotations/new`,
+  )
+})
+
+test('creates and persists a research item locally', async () => {
+  const user = userEvent.setup()
+  const project = createProject('Research Persistence Project')
+  saveProject(project)
+  window.history.pushState({}, '', `/projects/${project.id}/research-items/new`)
+
+  render(<App />)
+
+  await user.type(screen.getByLabelText(/title/i), 'Archive interview transcript')
+  await user.selectOptions(screen.getByLabelText(/kind/i), 'source')
+  await user.type(screen.getByLabelText(/description/i), 'A transcript used as primary evidence.')
+  await user.type(screen.getByLabelText(/locator/i), 'Box 2, folder 4')
+  await user.type(screen.getByLabelText(/url/i), 'https://example.com/archive')
+  await user.click(screen.getByRole('button', { name: /save research item/i }))
+
+  expect(await screen.findByRole('status')).toHaveTextContent(/saved archive interview transcript/i)
+
+  const updatedProject = loadProject(project.id)
+  expect(updatedProject?.researchItems).toHaveLength(1)
+  expect(updatedProject?.researchItems[0]).toMatchObject({
+    title: 'Archive interview transcript',
+    kind: 'source',
+    description: 'A transcript used as primary evidence.',
+    locator: 'Box 2, folder 4',
+    url: 'https://example.com/archive',
+  })
+  expect(updatedProject?.workflowState.currentStep).toBe('annotation')
+  expect(updatedProject?.workflowState.completedSteps).toEqual(
+    expect.arrayContaining(['project', 'research-item']),
+  )
+})
+
+test('renders annotation UI for an existing research item', () => {
+  const project = createProject('Annotation Render Project')
+  saveProject(project)
+  createResearchItem(project.id, {
+    title: 'Field note',
+    kind: 'note',
+    description: 'Observation from the archive visit.',
+  })
+  window.history.pushState({}, '', `/projects/${project.id}/annotations/new`)
+
+  render(<App />)
+
+  expect(screen.getByRole('heading', { name: /annotate a research item/i })).toBeInTheDocument()
+  expect(screen.getByLabelText(/^research item$/i)).toHaveDisplayValue(/field note/i)
+  expect(screen.getByRole('heading', { name: /field note/i })).toBeInTheDocument()
+  expect(screen.getByLabelText(/annotation note/i)).toBeInTheDocument()
+})
+
+test('creates and persists an annotation linked to a research item', async () => {
+  const user = userEvent.setup()
+  const project = createProject('Annotation Persistence Project')
+  saveProject(project)
+  const researchItem = createResearchItem(project.id, {
+    title: 'Policy memo',
+    kind: 'source',
+    locator: 'p. 12',
+  })
+  window.history.pushState({}, '', `/projects/${project.id}/annotations/new`)
+
+  render(<App />)
+
+  await user.type(screen.getByLabelText(/annotation note/i), 'This memo frames the policy as temporary.')
+  await user.type(screen.getByLabelText(/excerpt/i), 'temporary emergency measure')
+  await user.type(screen.getByLabelText(/tags/i), 'policy, framing, policy')
+  await user.click(screen.getByRole('button', { name: /save annotation/i }))
+
+  expect(await screen.findByRole('status')).toHaveTextContent(/saved annotation/i)
+
+  const updatedProject = loadProject(project.id)
+  expect(updatedProject?.annotations).toHaveLength(1)
+  expect(updatedProject?.annotations[0]).toMatchObject({
+    researchItemId: researchItem?.id,
+    note: 'This memo frames the policy as temporary.',
+    excerpt: 'temporary emergency measure',
+    tags: ['policy', 'framing'],
+  })
+  expect(updatedProject?.workflowState.currentStep).toBe('claim')
+  expect(updatedProject?.workflowState.completedSteps).toEqual(
+    expect.arrayContaining(['project', 'research-item', 'annotation']),
+  )
+})
+
+test('workflow home reflects research item and annotation progress', () => {
+  const project = createProject('Workflow Progress Project')
+  saveProject(project)
+  const researchItem = createResearchItem(project.id, {
+    title: 'Dataset excerpt',
+    kind: 'object',
+  })
+  createAnnotation(project.id, {
+    researchItemId: researchItem?.id ?? '',
+    note: 'The excerpt shows repeated category drift.',
+  })
+  window.history.pushState({}, '', `/projects/${project.id}`)
+
+  render(<App />)
+
+  expect(screen.getByText(/next: develop a claim/i)).toBeInTheDocument()
+  expect(screen.getByText('Research items').nextElementSibling).toHaveTextContent('1')
+  expect(screen.getByText('Annotations').nextElementSibling).toHaveTextContent('1')
+
+  const workflowProgress = screen.getByRole('heading', { name: 'Workflow progress' }).closest('section')
+  expect(workflowProgress).not.toBeNull()
+  const researchItemStep = within(workflowProgress as HTMLElement).getByText('Research Item').closest('li')
+  const annotationStep = within(workflowProgress as HTMLElement).getByText('Annotation').closest('li')
+  const claimStep = within(workflowProgress as HTMLElement).getByText('Claim').closest('li')
+
+  expect(researchItemStep).not.toBeNull()
+  expect(annotationStep).not.toBeNull()
+  expect(claimStep).not.toBeNull()
+  expect(within(researchItemStep as HTMLElement).getByText(/complete/i)).toBeInTheDocument()
+  expect(within(annotationStep as HTMLElement).getByText(/complete/i)).toBeInTheDocument()
+  expect(within(claimStep as HTMLElement).getByText(/current/i)).toBeInTheDocument()
+})
+
+test('old normalized projects can use research item and annotation screens', async () => {
+  const user = userEvent.setup()
+  const legacyProject = {
+    id: 'legacy-phase-three-project',
+    title: 'Legacy Phase Three Project',
+    content: {
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [{ type: 'text', text: 'Legacy prose' }],
+        },
+      ],
+    },
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-02T00:00:00.000Z',
+    wordCount: 2,
+    citationStyle: 'mla',
+    sources: [],
+  }
+  localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify([legacyProject]))
+  window.history.pushState({}, '', '/projects/legacy-phase-three-project/research-items/new')
+
+  const { unmount } = render(<App />)
+
+  await user.type(screen.getByLabelText(/title/i), 'Legacy evidence item')
+  await user.click(screen.getByRole('button', { name: /save research item/i }))
+  expect(await screen.findByRole('status')).toHaveTextContent(/saved legacy evidence item/i)
+
+  unmount()
+  window.history.pushState({}, '', '/projects/legacy-phase-three-project/annotations/new')
+  render(<App />)
+
+  await user.type(screen.getByLabelText(/annotation note/i), 'Legacy annotation still saves.')
+  await user.click(screen.getByRole('button', { name: /save annotation/i }))
+  expect(await screen.findByRole('status')).toHaveTextContent(/saved annotation/i)
+
+  const updatedProject = loadProject('legacy-phase-three-project')
+  expect(updatedProject?.researchItems).toHaveLength(1)
+  expect(updatedProject?.annotations).toHaveLength(1)
 })
 
 test('opens old normalized projects in the workflow home', () => {

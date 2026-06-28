@@ -66,38 +66,52 @@ function getArtifactCounts(project: Project) {
 
 function getNextStep(project: Project) {
   const currentStep = project.workflowState.currentStep
+  const hasResearchItems = project.researchItems.length > 0
+  const hasAnnotations = project.annotations.length > 0
 
   switch (currentStep) {
     case 'project':
     case 'research-item':
+      if (hasResearchItems && !hasAnnotations) {
+        return {
+          title: 'Next: annotate the evidence',
+          description:
+            'Use the saved research item as the evidence record, then write the annotation that explains what it shows.',
+          primaryHref: `/projects/${project.id}/annotations/new`,
+          primaryLabel: 'Add annotation',
+          secondaryHref: `/projects/${project.id}/research-items/new`,
+          secondaryLabel: 'Add another item',
+        }
+      }
+
       return {
         title: 'Next: add a research item',
         description:
-          'Prepare source metadata or images now. The dedicated research item intake screen arrives in the next implementation phase.',
-        primaryHref: '/citations',
-        primaryLabel: 'Review citations',
-        secondaryHref: '/images',
-        secondaryLabel: 'Review images',
+          'Start with one source, image, object, or note so later annotations and claims have a traceable evidence record.',
+        primaryHref: `/projects/${project.id}/research-items/new`,
+        primaryLabel: 'Add research item',
+        secondaryHref: '/citations',
+        secondaryLabel: 'Review citations',
       }
     case 'annotation':
       return {
         title: 'Next: annotate the evidence',
         description:
-          'Annotation UI is intentionally out of scope for Phase 2. Existing image notes can still help prepare evidence context.',
-        primaryHref: '/images',
-        primaryLabel: 'Review image notes',
-        secondaryHref: `/editor/${project.id}`,
-        secondaryLabel: 'Open editor',
+          'Capture what the selected research item shows and why it matters before moving toward a claim.',
+        primaryHref: `/projects/${project.id}/annotations/new`,
+        primaryLabel: 'Add annotation',
+        secondaryHref: `/projects/${project.id}/research-items/new`,
+        secondaryLabel: 'Add another item',
       }
     case 'claim':
       return {
         title: 'Next: develop a claim',
         description:
-          'Claim-building UI comes later. Use the editor to keep drafting while the workflow structure remains visible here.',
+          'A claim builder is not part of Phase 3. The saved annotation is ready for the next implementation phase.',
         primaryHref: `/editor/${project.id}`,
         primaryLabel: 'Open editor',
-        secondaryHref: '/citations',
-        secondaryLabel: 'Review citations',
+        secondaryHref: `/projects/${project.id}/annotations/new`,
+        secondaryLabel: 'Add another annotation',
       }
     case 'draft':
       return {
