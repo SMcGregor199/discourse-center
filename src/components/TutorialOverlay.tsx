@@ -7,6 +7,7 @@ import {
   loadTutorialState,
   saveTutorialState,
   startTutorial,
+  TUTORIAL_STATE_CHANGE_EVENT,
   updateTutorialProgress,
   type TutorialState,
   type TutorialStepId,
@@ -34,10 +35,18 @@ const TUTORIAL_STEPS: TutorialStepDefinition[] = [
     id: 'open-project',
     title: 'Create or open a project',
     instruction:
-      'Projects are the containers for the evidence-to-prose cycle. Open an existing project or create a new one.',
-    requirement: 'Reach a project workflow home before continuing.',
+      'Projects are the containers for the evidence-to-prose cycle. Open an existing project or start a new one.',
+    requirement: 'Open an existing project, or click New to choose a citation style.',
     targetLabel: 'Project card or New project button',
     actionLabel: 'Go to dashboard',
+  },
+  {
+    id: 'citation-style',
+    title: 'Choose citation style',
+    instruction:
+      'Pick the citation format this project should use. The app will carry that style into citations, drafting, and export.',
+    requirement: 'Select a citation style and create the document.',
+    targetLabel: 'Citation style selector',
   },
   {
     id: 'research-item',
@@ -147,11 +156,18 @@ function getProjectForTutorial(projectId?: string): Project | null {
   return projectId ? loadProject(projectId) : null
 }
 
-function isStepComplete(stepId: TutorialStepId, pathname: string, project: Project | null): boolean {
+function isStepComplete(
+  stepId: TutorialStepId,
+  pathname: string,
+  project: Project | null,
+  citationSelectorOpen: boolean,
+): boolean {
   switch (stepId) {
     case 'intro':
       return true
     case 'open-project':
+      return citationSelectorOpen || (isProjectWorkflowHome(pathname) && Boolean(project))
+    case 'citation-style':
       return isProjectWorkflowHome(pathname) && Boolean(project)
     case 'research-item':
       return Boolean(project && project.researchItems.length > 0)
@@ -175,6 +191,13 @@ function getNextStepId(stepId: TutorialStepId): TutorialStepId {
   return STEP_ORDER[Math.min(currentIndex + 1, STEP_ORDER.length - 1)]
 }
 
+function isCitationSelectorOpen(): boolean {
+  return (
+    typeof document !== 'undefined' &&
+    Boolean(document.querySelector('[data-tutorial-target="citation-style-selector"]'))
+  )
+}
+
 export function TutorialOverlay() {
   const location = useLocation()
   const [tutorialState, setTutorialState] = useState<TutorialState>(() => loadTutorialState())
@@ -187,7 +210,8 @@ export function TutorialOverlay() {
   const projectId = getKnownProjectId(tutorialState, location.pathname)
   const project = getProjectForTutorial(projectId)
   const currentStep = getStepDefinition(tutorialState.stepId)
-  const stepIsComplete = isStepComplete(currentStep.id, location.pathname, project)
+  const citationSelectorOpen = isCitationSelectorOpen()
+  const stepIsComplete = isStepComplete(currentStep.id, location.pathname, project, citationSelectorOpen)
   const actionHref = getActionHref(currentStep.id, project?.id ?? projectId)
   const stepIndex = STEP_ORDER.indexOf(currentStep.id) + 1
   const totalSteps = STEP_ORDER.length
@@ -213,6 +237,16 @@ export function TutorialOverlay() {
     const intervalId = window.setInterval(() => refreshTutorialView(value => value + 1), 750)
     return () => window.clearInterval(intervalId)
   }, [isActive])
+
+  useEffect(() => {
+    const handleTutorialStateChange = (event: Event) => {
+      setTutorialState((event as CustomEvent<TutorialState>).detail ?? loadTutorialState())
+      setStatusMessage('')
+    }
+
+    window.addEventListener(TUTORIAL_STATE_CHANGE_EVENT, handleTutorialStateChange)
+    return () => window.removeEventListener(TUTORIAL_STATE_CHANGE_EVENT, handleTutorialStateChange)
+  }, [])
 
   useEffect(() => {
     if (!isActive) {
@@ -258,7 +292,10 @@ export function TutorialOverlay() {
       return
     }
 
-    const nextStepId = getNextStepId(currentStep.id)
+    const nextStepId =
+      currentStep.id === 'open-project' && isProjectWorkflowHome(location.pathname)
+        ? 'research-item'
+        : getNextStepId(currentStep.id)
     persistState(updateTutorialProgress(nextStepId, project?.id ?? projectId))
   }
 

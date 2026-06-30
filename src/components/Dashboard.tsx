@@ -5,9 +5,11 @@ import {
   createProject,
   saveProject,
   normalizeProjectTitle,
+  clearProjectState,
   type Project,
   type CitationStyle,
 } from '../lib/storage'
+import { dismissTutorial } from '../lib/tutorial'
 import { CitationStyleSelector } from './CitationStyleSelector'
 
 export function Dashboard() {
@@ -81,6 +83,20 @@ export function Dashboard() {
     navigate('/citations')
   }
 
+  const resetProjectState = () => {
+    if (projects.length > 0 && !window.confirm('Clear all projects and start fresh?')) {
+      return
+    }
+
+    clearProjectState()
+    dismissTutorial()
+    setProjects([])
+    setEditingProjectId(null)
+    setDraftTitle('')
+    setShowCitationSelector(false)
+    navigate('/')
+  }
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     const now = new Date()
@@ -106,6 +122,10 @@ export function Dashboard() {
       <div className="dashboard-header">
         <h1>Your Projects</h1>
         <div className="header-actions">
+          <button className="reset-projects-btn" onClick={resetProjectState}>
+            <span className="reset-icon">↻</span>
+            <span>Reset</span>
+          </button>
           <button className="image-repo-btn" onClick={openImageRepository}>
             📷 Images
           </button>
@@ -189,10 +209,6 @@ export function Dashboard() {
         <div className="empty-state">
           <h2>No projects yet</h2>
           <p>Create your first project to get started</p>
-          <button className="new-project-btn primary" onClick={createNewProject}>
-            <span className="plus-icon">+</span>
-            <span>Create First Project</span>
-          </button>
         </div>
       )}
 

@@ -4,7 +4,7 @@ export const PROJECTS_STORAGE_KEY = 'discourse-center:projects'
 export const CURRENT_PROJECT_KEY = 'discourse-center:current-project'
 export const IMAGES_STORAGE_KEY = 'discourse-center:images'
 export const DEFAULT_PROJECT_TITLE = 'Untitled Document'
-export const INITIAL_PROJECT_TITLE = 'Chapter 1'
+const LEGACY_INITIAL_PROJECT_TITLE = 'Chapter 1'
 
 export interface Project {
   id: string
@@ -688,9 +688,7 @@ export function loadProjects(): Project[] {
   try {
     const raw = localStorage.getItem(PROJECTS_STORAGE_KEY)
     if (!raw) {
-      const initialProject = createInitialProject()
-      saveProjects([initialProject])
-      return [initialProject]
+      return []
     }
 
     const parsed = JSON.parse(raw) as unknown
@@ -701,6 +699,7 @@ export function loadProjects(): Project[] {
     const projects = parsed
       .map(normalizeProject)
       .filter((project): project is Project => project !== null)
+      .filter(project => !isEmptyLegacyInitialProject(project))
 
     if (JSON.stringify(parsed) !== JSON.stringify(projects)) {
       saveProjects(projects)
@@ -710,6 +709,20 @@ export function loadProjects(): Project[] {
   } catch {
     return []
   }
+}
+
+function isEmptyLegacyInitialProject(project: Project): boolean {
+  return (
+    project.title === LEGACY_INITIAL_PROJECT_TITLE &&
+    project.wordCount === 0 &&
+    countWords(project.content) === 0 &&
+    project.sources.length === 0 &&
+    project.researchItems.length === 0 &&
+    project.annotations.length === 0 &&
+    project.claims.length === 0 &&
+    project.draftPassages.length === 0 &&
+    project.exports.length === 0
+  )
 }
 
 export function saveProjects(projects: Project[]): void {
@@ -995,6 +1008,11 @@ export function deleteProject(id: string): void {
   saveProjects(filtered)
 }
 
+export function clearProjectState(): void {
+  localStorage.removeItem(PROJECTS_STORAGE_KEY)
+  localStorage.removeItem(CURRENT_PROJECT_KEY)
+}
+
 export function createProject(title?: string, citationStyle: CitationStyle = 'mla'): Project {
   const now = new Date().toISOString()
   const projectTitle = normalizeProjectTitle(title)
@@ -1016,10 +1034,6 @@ export function createProject(title?: string, citationStyle: CitationStyle = 'ml
     exports: [],
     workflowState: createDefaultWorkflowState(),
   }
-}
-
-function createInitialProject(): Project {
-  return createProject(INITIAL_PROJECT_TITLE)
 }
 
 export function getCurrentProjectId(): string | null {

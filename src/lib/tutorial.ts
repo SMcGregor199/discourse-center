@@ -1,10 +1,12 @@
 export const TUTORIAL_STORAGE_KEY = 'discourse-center:tutorial'
+export const TUTORIAL_STATE_CHANGE_EVENT = 'discourse-center:tutorial-state-change'
 
 export type TutorialStatus = 'unseen' | 'active' | 'dismissed' | 'completed'
 
 export type TutorialStepId =
   | 'intro'
   | 'open-project'
+  | 'citation-style'
   | 'research-item'
   | 'annotation'
   | 'claim'
@@ -23,6 +25,7 @@ export interface TutorialState {
 const TUTORIAL_STEPS: TutorialStepId[] = [
   'intro',
   'open-project',
+  'citation-style',
   'research-item',
   'annotation',
   'claim',
@@ -89,6 +92,7 @@ export function saveTutorialState(state: TutorialState): TutorialState {
   })
 
   localStorage.setItem(TUTORIAL_STORAGE_KEY, JSON.stringify(normalizedState))
+  window.dispatchEvent(new CustomEvent<TutorialState>(TUTORIAL_STATE_CHANGE_EVENT, { detail: normalizedState }))
   return normalizedState
 }
 

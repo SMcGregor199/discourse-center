@@ -74,8 +74,10 @@ html, body {
   display: flex;
   gap: 0.75rem;
   align-items: center;
+  flex-wrap: wrap;
 }
 
+.reset-projects-btn,
 .image-repo-btn {
   display: flex;
   align-items: center;
@@ -91,6 +93,11 @@ html, body {
   transition: all 0.2s ease;
 }
 
+.reset-projects-btn {
+  color: #64748b;
+}
+
+.reset-projects-btn:hover,
 .image-repo-btn:hover {
   background: #f9fafb;
   border-color: #d1d5db;
@@ -147,6 +154,11 @@ html, body {
 .plus-icon {
   font-size: 1.2rem;
   font-weight: 600;
+}
+
+.reset-icon {
+  font-size: 1rem;
+  font-weight: 700;
 }
 
 .projects-grid {
@@ -766,11 +778,11 @@ html, body {
 .tutorial-dialog,
 .tutorial-overlay {
   border: 1px solid #d6dfeb;
-  border-radius: 20px;
+  border-radius: 14px;
   background:
     radial-gradient(circle at top left, rgba(15, 118, 110, 0.12), transparent 32%),
     #ffffff;
-  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.24);
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.22);
   color: #172033;
 }
 
@@ -787,24 +799,32 @@ html, body {
 
 .tutorial-dialog h2,
 .tutorial-overlay h2 {
-  margin: 0.5rem 0;
+  margin: 0.4rem 0;
   color: #0f172a;
-  font-size: 1.45rem;
+  font-size: 1.15rem;
+  line-height: 1.25;
 }
 
 .tutorial-dialog p,
 .tutorial-overlay p {
   color: #475569;
-  line-height: 1.55;
+  font-size: 0.9rem;
+  line-height: 1.5;
 }
 
 .tutorial-overlay {
   position: fixed;
-  right: 1rem;
-  bottom: 1rem;
+  right: 0.75rem;
+  bottom: 0.75rem;
   z-index: 35;
-  width: min(calc(100vw - 2rem), 420px);
-  padding: 1.1rem;
+  width: min(calc(100vw - 1.5rem), 340px);
+  padding: 0.85rem;
+}
+
+html[data-tutorial-step="citation-style"] .tutorial-overlay {
+  left: 0.75rem;
+  right: auto;
+  z-index: 1010;
 }
 
 .tutorial-overlay-header {
@@ -817,17 +837,17 @@ html, body {
 .tutorial-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.65rem;
-  margin-top: 1rem;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
 }
 
 .tutorial-target-note,
 .tutorial-status {
   border: 1px solid #dbeafe;
-  border-radius: 12px;
+  border-radius: 8px;
   background: #eff6ff;
-  padding: 0.75rem;
-  margin: 0.75rem 0 0;
+  padding: 0.55rem;
+  margin: 0.55rem 0 0;
 }
 
 .tutorial-status.is-complete {
@@ -850,10 +870,17 @@ html, body {
   color: #0f172a;
 }
 
+.tutorial-overlay .workflow-primary-action,
+.tutorial-overlay .workflow-secondary-action {
+  border-radius: 8px;
+  font-size: 0.82rem;
+  padding: 0.55rem 0.7rem;
+}
+
 .tutorial-restart-button {
   position: fixed;
-  right: 1rem;
-  bottom: 1rem;
+  right: 0.75rem;
+  bottom: 0.75rem;
   z-index: 30;
   border: 1px solid #d6dfeb;
   border-radius: 999px;
@@ -862,7 +889,7 @@ html, body {
   box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14);
   cursor: pointer;
   font-weight: 800;
-  padding: 0.7rem 1rem;
+  padding: 0.6rem 0.85rem;
 }
 
 .tutorial-restart-button:hover {
@@ -877,6 +904,7 @@ html[data-tutorial-step="intro"] [data-tutorial-target="dashboard"],
 html[data-tutorial-step="intro"] [data-tutorial-target="workflow-home"],
 html[data-tutorial-step="open-project"] [data-tutorial-target="new-project"],
 html[data-tutorial-step="open-project"] [data-tutorial-target="project-card"],
+html[data-tutorial-step="citation-style"] [data-tutorial-target="citation-style-selector"],
 html[data-tutorial-step="research-item"] [data-tutorial-target="research-item-form"],
 html[data-tutorial-step="annotation"] [data-tutorial-target="annotation-form"],
 html[data-tutorial-step="claim"] [data-tutorial-target="claim-form"],
@@ -884,15 +912,16 @@ html[data-tutorial-step="draft"] [data-tutorial-target="draft-form"],
 html[data-tutorial-step="review"] [data-tutorial-target="review-chain"],
 html[data-tutorial-step="export"] [data-tutorial-target="export-card"] {
   position: relative;
-  outline: 4px solid #f59e0b;
-  outline-offset: 6px;
-  box-shadow: 0 0 0 10px rgba(245, 158, 11, 0.14), 0 18px 45px rgba(15, 23, 42, 0.12);
+  outline: 3px solid #f59e0b;
+  outline-offset: 4px;
+  box-shadow: 0 0 0 7px rgba(245, 158, 11, 0.12), 0 14px 34px rgba(15, 23, 42, 0.1);
 }
 
 html[data-tutorial-step="intro"] [data-tutorial-target="dashboard"]::before,
 html[data-tutorial-step="intro"] [data-tutorial-target="workflow-home"]::before,
 html[data-tutorial-step="open-project"] [data-tutorial-target="new-project"]::before,
 html[data-tutorial-step="open-project"] [data-tutorial-target="project-card"]::before,
+html[data-tutorial-step="citation-style"] [data-tutorial-target="citation-style-selector"]::before,
 html[data-tutorial-step="research-item"] [data-tutorial-target="research-item-form"]::before,
 html[data-tutorial-step="annotation"] [data-tutorial-target="annotation-form"]::before,
 html[data-tutorial-step="claim"] [data-tutorial-target="claim-form"]::before,
@@ -900,17 +929,17 @@ html[data-tutorial-step="draft"] [data-tutorial-target="draft-form"]::before,
 html[data-tutorial-step="review"] [data-tutorial-target="review-chain"]::before,
 html[data-tutorial-step="export"] [data-tutorial-target="export-card"]::before {
   position: absolute;
-  top: -0.9rem;
-  left: 1rem;
+  top: -0.7rem;
+  left: 0.65rem;
   z-index: 3;
   border-radius: 999px;
   background: #92400e;
   color: #ffffff;
   content: "Tutorial target";
-  font-size: 0.72rem;
+  font-size: 0.58rem;
   font-weight: 900;
-  letter-spacing: 0.04em;
-  padding: 0.28rem 0.55rem;
+  letter-spacing: 0.03em;
+  padding: 0.18rem 0.4rem;
   text-transform: uppercase;
 }
 
@@ -2515,6 +2544,9 @@ html[data-tutorial-step="export"] [data-tutorial-target="export-card"]::before {
     font-size: 1.75rem;
   }
 
+  .reset-projects-btn,
+  .image-repo-btn,
+  .citation-repo-btn,
   .new-project-btn {
     padding: 0.625rem 1rem;
     font-size: 0.9rem;

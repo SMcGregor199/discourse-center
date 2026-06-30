@@ -42,7 +42,7 @@ export function CitationStyleSelector({ onSelect, onCancel }: CitationStyleSelec
 
   return (
     <div className="citation-selector-overlay">
-      <div className="citation-selector-modal">
+      <div className="citation-selector-modal" data-tutorial-target="citation-style-selector">
         <div className="citation-selector-header">
           <h2>Choose Citation Style</h2>
           <p>Select the citation style you'll be using for this document</p>

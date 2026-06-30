@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, test, expect, vi } from 'vitest'
 import App from '../src/App'
 import {
+  CURRENT_PROJECT_KEY,
   PROJECTS_STORAGE_KEY,
   createAnnotation,
   createClaim,
@@ -112,8 +113,38 @@ test('renders dashboard projects', () => {
   render(<App />)
 
   expect(screen.getByRole('heading', { name: /your projects/i })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /reset/i })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /images/i })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /new/i })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: /no projects yet/i })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /create first project/i })).not.toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: /chapter 1/i })).not.toBeInTheDocument()
+})
+
+test('reset button clears project state and dismisses the tutorial from the dashboard', async () => {
+  const user = userEvent.setup()
+  const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+  const project = createProject('Manual Test Project')
+  saveProject(project)
+  localStorage.setItem(CURRENT_PROJECT_KEY, project.id)
+  updateTutorialProgress('research-item', project.id)
+
+  render(<App />)
+
+  expect(screen.getByRole('heading', { name: /manual test project/i })).toBeInTheDocument()
+  expect(screen.getByRole('dialog', { name: /add a research item/i })).toBeInTheDocument()
+
+  await user.click(screen.getByRole('button', { name: /reset/i }))
+
+  expect(confirmSpy).toHaveBeenCalledWith('Clear all projects and start fresh?')
+  expect(screen.queryByRole('heading', { name: /manual test project/i })).not.toBeInTheDocument()
+  expect(screen.queryByRole('dialog', { name: /add a research item/i })).not.toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: /no projects yet/i })).toBeInTheDocument()
+  expect(localStorage.getItem(PROJECTS_STORAGE_KEY)).toBeNull()
+  expect(localStorage.getItem(CURRENT_PROJECT_KEY)).toBeNull()
+  expect(loadTutorialState().status).toBe('dismissed')
+
+  confirmSpy.mockRestore()
 })
 
 test('first-run tutorial prompt appears', () => {
@@ -173,6 +204,32 @@ test('tutorial step advances only after the required action is completed', async
     status: 'active',
     stepId: 'research-item',
     projectId: project.id,
+  })
+})
+
+test('tutorial explains the citation style selector when creating a project', async () => {
+  const user = userEvent.setup()
+  updateTutorialProgress('open-project')
+
+  render(<App />)
+
+  expect(screen.getByRole('dialog', { name: /create or open a project/i })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /next tutorial step/i })).toBeDisabled()
+
+  await user.click(screen.getByRole('button', { name: /new/i }))
+
+  expect(await screen.findByRole('heading', { name: /choose citation style/i })).toBeInTheDocument()
+
+  await waitFor(() => {
+    expect(screen.getByRole('button', { name: /next tutorial step/i })).not.toBeDisabled()
+  })
+  await user.click(screen.getByRole('button', { name: /next tutorial step/i }))
+
+  expect(screen.getByRole('dialog', { name: /choose citation style/i })).toBeInTheDocument()
+  expect(screen.getByText(/current target:/i)).toHaveTextContent(/citation style selector/i)
+  expect(loadTutorialState()).toMatchObject({
+    status: 'active',
+    stepId: 'citation-style',
   })
 })
 

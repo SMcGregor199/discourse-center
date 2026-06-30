@@ -12,6 +12,7 @@ import {
   loadProject,
   loadProjects,
   saveProject,
+  saveProjects,
 } from '../src/lib/storage'
 
 const LEGACY_CONTENT = {
@@ -316,5 +317,17 @@ describe('workflow artifact storage helpers', () => {
     const projects = loadProjects()
 
     expect(projects.find(candidate => candidate.id === project.id)?.researchItems).toEqual([researchItem])
+  })
+
+  test('loadProjects removes the empty legacy Chapter 1 seed project', () => {
+    const seededProject = createProject('Chapter 1')
+    const userProject = createProject('User Project')
+    saveProjects([seededProject, userProject])
+
+    const projects = loadProjects()
+
+    expect(projects).toHaveLength(1)
+    expect(projects[0].title).toBe('User Project')
+    expect(JSON.parse(localStorage.getItem(PROJECTS_STORAGE_KEY) || '[]')).toHaveLength(1)
   })
 })
