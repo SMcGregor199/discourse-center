@@ -23,7 +23,7 @@ export interface Project {
   workflowState: ProjectWorkflowState
 }
 
-export type CitationStyle = 'mla' | 'apa' | 'chicago' | 'harvard'
+export type CitationStyle = 'mla'
 
 export type WorkflowStep =
   | 'project'
@@ -399,7 +399,7 @@ export function normalizeProject(value: unknown): Project | null {
 }
 
 function isCitationStyle(value: unknown): value is CitationStyle {
-  return value === 'mla' || value === 'apa' || value === 'chicago' || value === 'harvard'
+  return value === 'mla'
 }
 
 function withCompletedSteps(workflowState: ProjectWorkflowState, steps: WorkflowStep[]): ProjectWorkflowState {
@@ -519,34 +519,12 @@ export function normalizeProjectTitle(title?: string): string {
 }
 
 // Citation formatting functions
-export function formatInTextCitation(source: Source, citationStyle: CitationStyle): string {
-  switch (citationStyle) {
-    case 'mla':
-      return `(${source.author.split(' ').pop() || 'Unknown'} ${source.year})`
-    case 'apa':
-      return `(${source.author.split(' ').pop() || 'Unknown'}, ${source.year})`
-    case 'chicago':
-      return `${source.author} (${source.year})`
-    case 'harvard':
-      return `(${source.author} ${source.year})`
-    default:
-      return `(${source.author} ${source.year})`
-  }
+export function formatInTextCitation(source: Source, _citationStyle: CitationStyle): string {
+  return `(${source.author.split(' ').pop() || 'Unknown'} ${source.year})`
 }
 
-export function formatWorksCitedEntry(source: Source, citationStyle: CitationStyle): string {
-  switch (citationStyle) {
-    case 'mla':
-      return formatMLAEntry(source)
-    case 'apa':
-      return formatAPAEntry(source)
-    case 'chicago':
-      return formatChicagoEntry(source)
-    case 'harvard':
-      return formatHarvardEntry(source)
-    default:
-      return formatMLAEntry(source)
-  }
+export function formatWorksCitedEntry(source: Source, _citationStyle: CitationStyle): string {
+  return formatMLAEntry(source)
 }
 
 function formatMLAEntry(source: Source): string {
@@ -571,74 +549,6 @@ function formatMLAEntry(source: Source): string {
     default:
       if (source.publisher) entry += ` ${source.publisher},`
       entry += ` ${source.year}.`
-  }
-  
-  return entry
-}
-
-function formatAPAEntry(source: Source): string {
-  let entry = `${source.author} (${source.year}). ${source.title}.`
-  
-  switch (source.type) {
-    case 'book':
-      if (source.publisher) entry += ` ${source.publisher}.`
-      break
-    case 'journal':
-      if (source.journal) entry += ` ${source.journal}`
-      if (source.volume) entry += `, ${source.volume}`
-      if (source.pages) entry += `, ${source.pages}.`
-      break
-    case 'website':
-      if (source.url) entry += ` Retrieved from ${source.url}.`
-      break
-    default:
-      if (source.publisher) entry += ` ${source.publisher}.`
-  }
-  
-  return entry
-}
-
-function formatChicagoEntry(source: Source): string {
-  let entry = `${source.author}. "${source.title}."`
-  
-  switch (source.type) {
-    case 'book':
-      if (source.publisher) entry += ` ${source.publisher}:`
-      entry += ` ${source.year}.`
-      break
-    case 'journal':
-      if (source.journal) entry += ` ${source.journal}`
-      if (source.volume) entry += ` ${source.volume}`
-      if (source.pages) entry += ` (${source.year}): ${source.pages}.`
-      break
-    case 'website':
-      if (source.url) entry += ` Last modified ${source.year}. ${source.url}.`
-      break
-    default:
-      if (source.publisher) entry += ` ${source.publisher},`
-      entry += ` ${source.year}.`
-  }
-  
-  return entry
-}
-
-function formatHarvardEntry(source: Source): string {
-  let entry = `${source.author} (${source.year}) '${source.title}',`
-  
-  switch (source.type) {
-    case 'book':
-      if (source.publisher) entry += ` ${source.publisher}.`
-      break
-    case 'journal':
-      if (source.journal) entry += ` ${source.journal}`
-      if (source.volume) entry += `, ${source.volume}`
-      if (source.pages) entry += `, pp. ${source.pages}.`
-      break
-    case 'website':
-      if (source.url) entry += ` Available at: ${source.url} (Accessed: ${new Date().toLocaleDateString()}).`
-      break
-    default:
-      if (source.publisher) entry += ` ${source.publisher}.`
   }
   
   return entry

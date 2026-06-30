@@ -3,9 +3,6 @@ import { loadProject, type Project, type WorkflowStep } from '../lib/storage'
 
 const CITATION_STYLE_LABELS = {
   mla: 'MLA',
-  apa: 'APA',
-  chicago: 'Chicago',
-  harvard: 'Harvard',
 } as const
 
 const WORKFLOW_STEPS: Array<{

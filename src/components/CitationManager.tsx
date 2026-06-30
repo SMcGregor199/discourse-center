@@ -98,13 +98,7 @@ export function CitationManager({ projectId, sources, citationStyle, onInsertCit
   }
 
   const getWorksCitedTitle = () => {
-    switch (citationStyle) {
-      case 'mla': return 'Works Cited'
-      case 'apa': return 'References'
-      case 'chicago': return 'Bibliography'
-      case 'harvard': return 'Reference List'
-      default: return 'Works Cited'
-    }
+    return 'Works Cited'
   }
 
   return (

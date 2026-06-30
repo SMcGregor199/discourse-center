@@ -112,6 +112,10 @@ export function dismissTutorial(): TutorialState {
   })
 }
 
+export function resetTutorialPrompt(): TutorialState {
+  return saveTutorialState(createDefaultTutorialState())
+}
+
 export function completeTutorial(): TutorialState {
   return saveTutorialState({
     ...loadTutorialState(),

@@ -9,7 +9,7 @@ import {
   type Project,
   type CitationStyle,
 } from '../lib/storage'
-import { dismissTutorial } from '../lib/tutorial'
+import { resetTutorialPrompt } from '../lib/tutorial'
 import { CitationStyleSelector } from './CitationStyleSelector'
 
 export function Dashboard() {
@@ -89,7 +89,7 @@ export function Dashboard() {
     }
 
     clearProjectState()
-    dismissTutorial()
+    resetTutorialPrompt()
     setProjects([])
     setEditingProjectId(null)
     setDraftTitle('')

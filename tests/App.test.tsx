@@ -121,7 +121,7 @@ test('renders dashboard projects', () => {
   expect(screen.queryByRole('heading', { name: /chapter 1/i })).not.toBeInTheDocument()
 })
 
-test('reset button clears project state and dismisses the tutorial from the dashboard', async () => {
+test('reset button clears project state and restores the tutorial prompt from the dashboard', async () => {
   const user = userEvent.setup()
   const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
   const project = createProject('Manual Test Project')
@@ -139,10 +139,11 @@ test('reset button clears project state and dismisses the tutorial from the dash
   expect(confirmSpy).toHaveBeenCalledWith('Clear all projects and start fresh?')
   expect(screen.queryByRole('heading', { name: /manual test project/i })).not.toBeInTheDocument()
   expect(screen.queryByRole('dialog', { name: /add a research item/i })).not.toBeInTheDocument()
+  expect(screen.getByRole('dialog', { name: /would you like to go through the tutorial/i })).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: /no projects yet/i })).toBeInTheDocument()
   expect(localStorage.getItem(PROJECTS_STORAGE_KEY)).toBeNull()
   expect(localStorage.getItem(CURRENT_PROJECT_KEY)).toBeNull()
-  expect(loadTutorialState().status).toBe('dismissed')
+  expect(loadTutorialState().status).toBe('unseen')
 
   confirmSpy.mockRestore()
 })
@@ -219,6 +220,10 @@ test('tutorial explains the citation style selector when creating a project', as
   await user.click(screen.getByRole('button', { name: /new/i }))
 
   expect(await screen.findByRole('heading', { name: /choose citation style/i })).toBeInTheDocument()
+  expect(screen.getByText(/MLA \(Modern Language Association\)/i)).toBeInTheDocument()
+  expect(screen.queryByText(/APA \(American Psychological Association\)/i)).not.toBeInTheDocument()
+  expect(screen.queryByText(/Chicago \(Chicago Manual of Style\)/i)).not.toBeInTheDocument()
+  expect(screen.queryByText(/^Harvard$/i)).not.toBeInTheDocument()
 
   await waitFor(() => {
     expect(screen.getByRole('button', { name: /next tutorial step/i })).not.toBeDisabled()
@@ -322,14 +327,14 @@ test('opens the workflow home from the dashboard project card', async () => {
 })
 
 test('renders workflow home for an existing project', () => {
-  const project = createProject('Workflow Home Project', 'apa')
+  const project = createProject('Workflow Home Project')
   saveProject(project)
   window.history.pushState({}, '', `/projects/${project.id}`)
 
   render(<App />)
 
   expect(screen.getByRole('heading', { name: /workflow home project/i })).toBeInTheDocument()
-  expect(screen.getByText(/APA citations/i)).toBeInTheDocument()
+  expect(screen.getByText(/MLA citations/i)).toBeInTheDocument()
   expect(screen.getByText(/0 words/i)).toBeInTheDocument()
   expect(screen.getByRole('link', { name: /open editor/i })).toHaveAttribute('href', `/editor/${project.id}`)
   expect(screen.getByRole('link', { name: /open image repository/i })).toHaveAttribute('href', '/images')

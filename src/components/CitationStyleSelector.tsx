@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { type CitationStyle } from '../lib/storage'
 
 type CitationStyleSelectorProps = {
@@ -7,8 +6,6 @@ type CitationStyleSelectorProps = {
 }
 
 export function CitationStyleSelector({ onSelect, onCancel }: CitationStyleSelectorProps) {
-  const [selectedStyle, setSelectedStyle] = useState<CitationStyle>('mla')
-
   const citationStyles = [
     {
       value: 'mla' as CitationStyle,
@@ -16,28 +13,10 @@ export function CitationStyleSelector({ onSelect, onCancel }: CitationStyleSelec
       description: 'Commonly used in humanities and liberal arts',
       example: '(Smith 2023)'
     },
-    {
-      value: 'apa' as CitationStyle,
-      name: 'APA (American Psychological Association)',
-      description: 'Commonly used in social sciences',
-      example: '(Smith, 2023)'
-    },
-    {
-      value: 'chicago' as CitationStyle,
-      name: 'Chicago (Chicago Manual of Style)',
-      description: 'Commonly used in history and some social sciences',
-      example: 'Smith (2023)'
-    },
-    {
-      value: 'harvard' as CitationStyle,
-      name: 'Harvard',
-      description: 'Commonly used in UK and Australian universities',
-      example: '(Smith 2023)'
-    }
   ]
 
   const handleSelect = () => {
-    onSelect(selectedStyle)
+    onSelect('mla')
   }
 
   return (
@@ -52,8 +31,7 @@ export function CitationStyleSelector({ onSelect, onCancel }: CitationStyleSelec
           {citationStyles.map(style => (
             <div
               key={style.value}
-              className={`citation-style-option ${selectedStyle === style.value ? 'selected' : ''}`}
-              onClick={() => setSelectedStyle(style.value)}
+              className="citation-style-option selected"
             >
               <div className="style-info">
                 <h3>{style.name}</h3>
@@ -65,8 +43,8 @@ export function CitationStyleSelector({ onSelect, onCancel }: CitationStyleSelec
                   type="radio"
                   name="citation-style"
                   value={style.value}
-                  checked={selectedStyle === style.value}
-                  onChange={() => setSelectedStyle(style.value)}
+                  checked
+                  readOnly
                 />
               </div>
             </div>

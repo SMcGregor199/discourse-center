@@ -60,7 +60,7 @@ describe('storage workflow model migration', () => {
       title: 'Legacy Project',
       content: LEGACY_CONTENT,
       wordCount: 3,
-      citationStyle: 'apa',
+      citationStyle: 'mla',
       sources: legacyProject.sources,
       researchItems: [],
       annotations: [],
@@ -86,7 +86,7 @@ describe('storage workflow model migration', () => {
   })
 
   test('preserves existing project and source behavior when loading', () => {
-    const project = createProject('Source Project', 'chicago')
+    const project = createProject('Source Project')
     saveProject(project)
 
     addSource(project.id, {
@@ -102,7 +102,7 @@ describe('storage workflow model migration', () => {
     const loadedProject = loadProject(project.id)
 
     expect(loadedProject?.title).toBe('Source Project')
-    expect(loadedProject?.citationStyle).toBe('chicago')
+    expect(loadedProject?.citationStyle).toBe('mla')
     expect(loadedProject?.content).toEqual(project.content)
     expect(loadedProject?.sources).toHaveLength(1)
     expect(loadedProject?.sources[0]).toMatchObject({
